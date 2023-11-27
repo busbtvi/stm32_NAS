@@ -108,8 +108,7 @@ static  void  AppTaskThird  (void *p_arg);
 *********************************************************************************************************
 */
 
-int  main (void)
-{
+int  main (void){
     OS_ERR  err;
 
 
@@ -117,7 +116,7 @@ int  main (void)
 
     OSInit(&err);                                               /* Init uC/OS-III.                                      */
 	
-		OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
+    OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
                          (OS_TICK    )10000,
                          (OS_ERR    *)&err);
 
@@ -155,8 +154,7 @@ int  main (void)
 *********************************************************************************************************
 */
 
-static  void  AppTaskStart (void *p_arg)
-{
+static  void  AppTaskStart (void *p_arg){
     CPU_INT32U  cpu_clk_freq;
     CPU_INT32U  cnts;
     OS_ERR      err;
@@ -171,6 +169,7 @@ static  void  AppTaskStart (void *p_arg)
     cnts = cpu_clk_freq / (CPU_INT32U)OSCfg_TickRate_Hz;        /* Determine nbr SysTick increments                     */
     OS_CPU_SysTickInit(cnts);                                   /* Init uC/OS periodic time src (SysTick).              */
 
+    Init_lwIP();
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
 
 #if OS_CFG_STAT_TASK_EN > 0u

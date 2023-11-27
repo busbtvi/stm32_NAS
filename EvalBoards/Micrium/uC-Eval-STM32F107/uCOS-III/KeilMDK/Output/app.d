@@ -39,4 +39,5 @@
   ..\..\BSP\OS\uCOS-III\bsp_os.h ..\..\..\..\..\uCOS-III\Source\os.h \
   ..\..\uCOS-III\os_cfg.h ..\..\..\..\..\uCOS-III\Source\os_type.h \
   ..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView\os_cpu.h \
-  ..\..\BSP\bsp_ser.h ..\..\BSP\bsp_i2c.h ..\..\BSP\bsp_stlm75.h
+  ..\..\BSP\bsp_ser.h ..\..\BSP\bsp_i2c.h ..\..\BSP\bsp_stlm75.h \
+  ..\..\..\..\..\lwIP\port\include\lwip.h

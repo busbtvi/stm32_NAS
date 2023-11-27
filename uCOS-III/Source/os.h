@@ -1091,6 +1091,39 @@ struct  os_tmr_spoke {
     OS_OBJ_QTY           NbrEntriesMax;
 };
 
+
+/*
+------------------------------------------------------------------------------------------------------------------------
+*                                                  이벤트 컨트롤 블록
+------------------------------------------------------------------------------------------------------------------------
+*/
+
+#define OS_MAX_EVENTS            16    /* Max. number of event control blocks in your application      */
+#define  OS_EVENT_TBL_SIZE ((OS_CFG_PRIO_MAX) / 8 + 1)   /* 이벤트 테이블 크기                          */
+
+#if (OS_MAX_EVENTS >= 2)
+typedef struct {
+    void        *OSEventPtr;                   /* 메시지나 큐를 가리키는 포인터                            */
+    CPU_INT08U  OSEventTbl[OS_EVENT_TBL_SIZE]; /* 이벤트 대기 중인 태스크 목록                             */
+    CPU_INT16U  OSEventCnt;                    /* 세마포어인 경우 사용하는 카운터                          */
+    CPU_INT08U  OSEventType;                   /* OS_EVENT_TYPE_MBOX, OS_EVENT_TYPE_Q, OS_EVENT_TYPE_SEM   */
+    CPU_INT08U  OSEventGrp;                    /* 이벤트 발생을 기다리는 태스크의 해당 그룹                */
+} OS_EVENT;
+#endif
+
+/*
+------------------------------------------------------------------------------------------------------------------------
+*                                                  메시지 메일 박스
+------------------------------------------------------------------------------------------------------------------------
+*/
+#if OS_MBOX_EN
+typedef struct {
+    void        *OSMsg;                        /* 메일박스의 메시지를 가리키는 포인터                      */
+    CPU_INT08U  OSEventTbl[OS_EVENT_TBL_SIZE]; /* 이벤트 대기 중인 태스크 목록                             */
+    CPU_INT08U  OSEventGrp;                    /* 이벤트 발생을 기다리는 태스크의 해당 그룹                */
+} OS_MBOX_DATA;
+#endif
+
 /*$PAGE*/
 /*
 ************************************************************************************************************************

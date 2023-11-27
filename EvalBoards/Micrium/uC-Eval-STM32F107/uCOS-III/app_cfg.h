@@ -50,6 +50,13 @@
 #define  APP_TASK_START_PRIO                        2
 
 
+#define  LWIP_TASK_START_PRIO                             10
+#define  LWIP_TASK_END_PRIO                               12
+
+#define  LWIP_TCPSERVER_PRIO                              15
+#define  LWIP_UDPSERVER_PRIO                              16
+
+
 /*
 *********************************************************************************************************
 *                                            TASK STACK SIZES

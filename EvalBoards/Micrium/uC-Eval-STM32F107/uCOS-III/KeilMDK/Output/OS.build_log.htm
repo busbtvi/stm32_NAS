@@ -21,17 +21,50 @@ Target DLL:      Segger\JL2CM3.dll V2.99.42.0
 Dialog DLL:      TARMSTM.DLL V1.67.1.0
  
 <h2>Project:</h2>
-D:\projects\Micrium\Software\EvalBoards\Micrium\uC-Eval-STM32F107\uCOS-III\KeilMDK\uCOS-III.uvproj
-Project File Date:  09/18/2023
+D:\projects\stm32_NAS\EvalBoards\Micrium\uC-Eval-STM32F107\uCOS-III\KeilMDK\uCOS-III.uvproj
+Project File Date:  11/28/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V6.19', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'FLASH'
-compiling app.c...
-linking...
-Program Size: Code=55944 RO-data=972 RW-data=0 ZI-data=38416  
-".\Output\OS.axf" - 0 Error(s), 0 Warning(s).
-Build Time Elapsed:  00:00:01
+Note: source file '..\..\..\..\..\lwIP\src\netif\ethernetif.c' - object file renamed from '.\Output\ethernetif.o' to '.\Output\ethernetif_1.o'.
+../netapp/tcpmultiserver.c(22): error: 'lwip/sockets.h' file not found
+#include <lwip/sockets.h> /* ʹ��BSD Socket�ӿڱ������sockets.h���ͷ�ļ� */
+         ^~~~~~~~~~~~~~~~
+1 error generated.
+compiling tcpmultiserver.c...
+../netapp/tcpserver2.c(22): error: 'lwip/sockets.h' file not found
+#include <lwip/sockets.h> /* ʹ��BSD Socket�ӿڱ������sockets.h���ͷ�ļ� */
+         ^~~~~~~~~~~~~~~~
+1 error generated.
+compiling tcpserver2.c...
+../netapp/tcpserver.c(22): error: 'lwip/sockets.h' file not found
+#include <lwip/sockets.h> /* ʹ��BSD Socket�ӿڱ������sockets.h���ͷ�ļ� */
+         ^~~~~~~~~~~~~~~~
+1 error generated.
+compiling tcpserver.c...
+../netapp/udpclient.c(21): error: 'lwip/netdb.h' file not found
+#include <lwip/netdb.h> /* Ϊ�˽�������������Ҫ����netdb.hͷ�ļ� */
+         ^~~~~~~~~~~~~~
+1 error generated.
+compiling udpclient.c...
+../netapp/sample_TTCP.c(54): warning: incompatible pointer types passing 'OS_ERR **' (aka 'enum os_err **') to parameter of type 'OS_ERR *' (aka 'enum os_err *'); remove & [-Wincompatible-pointer-types]
+   pTBLK->m_tStart = OSTimeGet(&p_err);//GetTickCount();
+                               ^~~~~~
+../../../../../uCOS-III/Source\os.h(1866): note: passing argument to parameter 'p_err' here
+OS_TICK       OSTimeGet                 (OS_ERR                *p_err);
+                                                                ^
+../netapp/sample_TTCP.c(63): warning: incompatible pointer types passing 'OS_ERR **' (aka 'enum os_err **') to parameter of type 'OS_ERR *' (aka 'enum os_err *'); remove & [-Wincompatible-pointer-types]
+compiling sample_TTCP.c...
+compiling netio.c...
+compiling sample_http.c...
+compiling stm32_eth.c...
+compiling udpserver.c...
+compiling bsp.c...
+compiling bsp_periph.c...
+compiling bsp_int.c...
+Project build/rebuild aborted.
+Build Time Elapsed:  00:00:03
 </pre>
 </body>
 </html>

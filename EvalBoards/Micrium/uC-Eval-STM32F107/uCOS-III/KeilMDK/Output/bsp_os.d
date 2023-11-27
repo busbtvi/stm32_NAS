@@ -1,9 +1,9 @@
 ./output/bsp_os.o: ..\..\BSP\OS\uCOS-III\bsp_os.c ..\..\BSP\bsp.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
   C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
-  ..\..\..\..\..\uC-CPU\ARM-Cortex-M3\RealView\cpu.h \
-  ..\..\..\..\..\uC-CPU\cpu_def.h ..\..\uCOS-III\cpu_cfg.h \
+  ..\..\..\..\..\lwIP\port\include\arch\cpu.h \
   ..\..\..\..\..\uC-CPU\cpu_core.h ..\..\..\..\..\uC-LIB\lib_def.h \
+  ..\..\..\..\..\uC-CPU\cpu_def.h ..\..\uCOS-III\cpu_cfg.h \
   ..\..\..\..\..\uC-LIB\lib_mem.h ..\..\uCOS-III\lib_cfg.h \
   ..\..\..\..\..\uC-LIB\lib_str.h ..\..\..\..\..\uC-LIB\lib_ascii.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_lib.h \
