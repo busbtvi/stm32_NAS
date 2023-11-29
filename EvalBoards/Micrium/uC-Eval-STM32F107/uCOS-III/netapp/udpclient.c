@@ -18,8 +18,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "udpclient.h"
-#include <lwip/netdb.h> /* Ϊ�˽�������������Ҫ����netdb.hͷ�ļ� */
-#include <lwip/sockets.h> /* ʹ��BSD socket����Ҫ����sockets.hͷ�ļ� */
+#include <netdb.h> /* Ϊ�˽�������������Ҫ����netdb.hͷ�ļ� */
+#include <sockets.h> /* ʹ��BSD socket����Ҫ����sockets.hͷ�ļ� */
 #include "mem.h"
 #include "includes.h"
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +40,7 @@ const char send_data[] = "This is UDP Client from RT-Thread.\n"; /* ����
 /* Private functions ---------------------------------------------------------*/
 void udpclient(const char* url, int port, int count)
 {
+    OS_ERR err3;
    int sock;
    struct hostent *host;
    struct sockaddr_in server_addr;
@@ -68,7 +69,8 @@ void udpclient(const char* url, int port, int count)
               (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
 
        /* �߳�����һ��ʱ�� */
-       OSTimeDly(50);
+    //    OSTimeDly(50);
+       OSTimeDly((OS_TICK )50, (OS_OPT  )OS_OPT_TIME_DLY, (OS_ERR *)&err3);
 
        /* ����ֵ��һ */
        count --;

@@ -77,8 +77,8 @@
 
 #include "sys.h"
 
-#include "netif/ppp_oe.h"
-#include "netif/etharp.h"
+#include "ppp_oe.h"
+#include "etharp.h"
 
 #include <string.h>
 #include <stdio.h>

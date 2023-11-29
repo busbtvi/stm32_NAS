@@ -82,7 +82,7 @@
 #include "dhcp.h"
 #include "autoip.h"
 #include "dns.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 #include <string.h>
 

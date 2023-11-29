@@ -51,8 +51,8 @@
 #include "dns.h"
 #include "tcpip.h"
 #include "init.h"
-#include "netif/etharp.h"
-#include "netif/ppp_oe.h"
+#include "etharp.h"
+#include "ppp_oe.h"
 
 /* global variables */
 static void (* tcpip_init_done)(void *arg);

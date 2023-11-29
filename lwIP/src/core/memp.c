@@ -51,7 +51,7 @@
 #include "tcpip.h"
 #include "sys.h"
 #include "stats.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 #include "ip_frag.h"
 
 #include <string.h>

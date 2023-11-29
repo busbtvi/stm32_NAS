@@ -22,7 +22,7 @@ extern "C" { /* Make sure we have C-declarations in C++ programs */
 
 
 /* Includes ------------------------------------------------------------------*/
-
+#include <stdint.h>
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -60,7 +60,7 @@ long double unpack754(uint64_t i, unsigned bits, unsigned expbits);
 -- The standard C preprocessor directive #error should be used to notify the
 programmer when #define constants or macros are not present and to indicate
 that a #define value is out of range. These statements are normally found in
-a module¡¯s .H file. The #error directive will display the message within the
+a moduleï¿½ï¿½s .H file. The #error directive will display the message within the
 double quotes when the condition is not met.
 */
 

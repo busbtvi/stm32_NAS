@@ -32,6 +32,8 @@
 
 #define SYS_ARCH_GLOBALS
 
+#include "string.h"
+#include "os_cfg_app.h"
 /* lwIP includes. */
 #include "debug.h"
 #include "def.h"
@@ -47,6 +49,9 @@ const void * const pvNullPointer = (mem_ptr_t*)0xffffffff;
 static char pcQueueMemoryPool[MAX_QUEUES * sizeof(TQ_DESCR) + MEM_ALIGNMENT - 1];
 
 //SYS_ARCH_EXT OS_STK LWIP_TASK_STK[LWIP_TASK_MAX][LWIP_STK_SIZE];
+#define NewThreadMax  5
+static  OS_TCB   TcpServerTCB[NewThreadMax];
+static  int      availableTcbIndex = 0;
 
 /* Message queue constants. */
 #define archMESG_QUEUE_LENGTH	( 6 )
@@ -63,23 +68,29 @@ sys_mbox_new(int size)
     // prarmeter "size" can be ignored in your implementation.
     u8_t       ucErr;
     PQ_DESCR    pQDesc;
+    OS_ERR err3;
     
     pQDesc = OSMemGet( pQueueMem, &ucErr );
-    LWIP_ASSERT("OSMemGet ", ucErr == OS_NO_ERR );
+    LWIP_ASSERT("OSMemGet ", ucErr == OS_ERR_NONE );
     
-    if( ucErr == OS_NO_ERR ) 
+    if( ucErr == OS_ERR_NONE ) 
     {
         if( size > MAX_QUEUE_ENTRIES ) // �����������MAX_QUEUE_ENTRIES��Ϣ��Ŀ
             size = MAX_QUEUE_ENTRIES;
         
-        pQDesc->pQ = OSQCreate( &(pQDesc->pvQEntries[0]), size ); 
+        // pQDesc->pQ = OSQCreate( &(pQDesc->pvQEntries[0]), size ); 
+        OSQCreate ((OS_Q      *)  pQDesc->pvQEntries[0],
+                    (CPU_CHAR  *) "sys_mbox_new",
+                    (OS_MSG_QTY ) size,
+                    (OS_ERR    *) &err3);
         LWIP_ASSERT( "OSQCreate ", pQDesc->pQ != NULL );
         
         if( pQDesc->pQ != NULL ) 
             return pQDesc; 
         else
         {
-            ucErr = OSMemPut( pQueueMem, pQDesc );
+            // ucErr = OSMemPut( pQueueMem, pQDesc );
+            OSMemPut(pQueueMem, pQDesc , &err3);
             return SYS_MBOX_NULL;
         }
     }
@@ -96,19 +107,21 @@ void
 sys_mbox_free(sys_mbox_t mbox)
 {
     u8_t     ucErr;
+    OS_ERR err3;
     
     LWIP_ASSERT( "sys_mbox_free ", mbox != SYS_MBOX_NULL );      
         
     //clear OSQ EVENT
-    OSQFlush( mbox->pQ );
+    OSQFlush((OS_Q *)mbox->pQ->OSEventPtr, &err3);
     
     //del OSQ EVENT
-    (void)OSQDel( mbox->pQ, OS_DEL_NO_PEND, &ucErr);
-    LWIP_ASSERT( "OSQDel ", ucErr == OS_NO_ERR );
+    (void)OSQDel( mbox->pQ, OS_OPT_DEL_NO_PEND, &ucErr);
+    LWIP_ASSERT( "OSQDel ", ucErr == OS_ERR_NONE );
     
     //put mem back to mem queue
-    ucErr = OSMemPut( pQueueMem, mbox );
-    LWIP_ASSERT( "OSMemPut ", ucErr == OS_NO_ERR );  
+    // ucErr = OSMemPut( pQueueMem, mbox );
+    OSMemPut(pQueueMem, mbox , &err3);
+    LWIP_ASSERT( "OSMemPut ", err3 == OS_ERR_NONE );  
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -116,14 +129,22 @@ sys_mbox_free(sys_mbox_t mbox)
 void
 sys_mbox_post(sys_mbox_t mbox, void *msg)
 {   
-    u8_t ubErr,i=0;
+    u8_t i=0;
+    OS_ERR err3;
     
     if( msg == NULL ) msg = (void*)&pvNullPointer;
-    
-    while((i<10) && ((ubErr = OSQPost( mbox->pQ, msg)) != OS_NO_ERR))
+    OSQPost((OS_Q     *) mbox->pQ->OSEventPtr,
+            (void      *) msg,
+            (OS_MSG_SIZE) strlen(msg),
+            (OS_OPT     ) OS_OPT_POST_FIFO,
+            (OS_ERR    *) &err3);
+
+    // while((i<10) && ((ubErr = OSQPost( mbox->pQ, msg)) != OS_NO_ERR))
+    while((i<10) && (err3 != OS_ERR_NONE))
     {
     	i++;//if full, try 10 times
-    	OSTimeDly(5);
+    	// OSTimeDly(5);
+        OSTimeDly((OS_TICK )5, (OS_OPT  )OS_OPT_TIME_DLY, (OS_ERR *)&err3);
     }
     //if (i==10) printf("sys_mbox_post error!\n");
 }
@@ -131,11 +152,16 @@ sys_mbox_post(sys_mbox_t mbox, void *msg)
 // Try to post the "msg" to the mailbox.
 err_t sys_mbox_trypost(sys_mbox_t mbox, void *msg)
 {
-    u8_t ubErr;
+    OS_ERR err3;    
     
     if(msg == NULL ) msg = (void*)&pvNullPointer;
+    OSQPost((OS_Q     *) mbox->pQ->OSEventPtr,
+            (void      *) msg,
+            (OS_MSG_SIZE) strlen(msg),
+            (OS_OPT     ) OS_OPT_POST_FIFO,
+            (OS_ERR    *) &err3);
     
-    if((ubErr = OSQPost( mbox->pQ, msg)) != OS_NO_ERR)
+    if(err3 != OS_ERR_NONE)
         return ERR_MEM;
 
     return ERR_OK;
@@ -159,14 +185,14 @@ err_t sys_mbox_trypost(sys_mbox_t mbox, void *msg)
 */
 u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
 {
-    OS_ERR *p_err;
-    u8_t	ucErr;
+    OS_ERR err3;
+    OS_MSG_SIZE p_msg_size = 1;
     u32_t	ucos_timeout, timeout_new;
     void	*temp;
     
     if(timeout != 0)
     {
-    	ucos_timeout = (timeout * OS_TICKS_PER_SEC)/1000; //convert to timetick
+    	ucos_timeout = (timeout * OS_CFG_TICK_RATE_HZ)/1000; //convert to timetick
     	
     	if(ucos_timeout < 1)
             ucos_timeout = 1;
@@ -175,9 +201,15 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
     }
     else ucos_timeout = 0;
     
-    timeout = OSTimeGet(&p_err);
+    timeout = OSTimeGet((OS_ERR *)&err3);
     
-    temp = OSQPend( mbox->pQ, (u16_t)ucos_timeout, &ucErr );
+    // temp = OSQPend( mbox->pQ, (u16_t)ucos_timeout, &ucErr );
+    temp = OSQPend((OS_Q       *) mbox->pQ->OSEventPtr,
+            (OS_TICK     ) ucos_timeout,
+            (OS_OPT      ) OS_OPT_PEND_BLOCKING,
+            (OS_MSG_SIZE*) &p_msg_size,
+            (CPU_TS     *) &timeout_new,
+            (OS_ERR     *) &err3);
     
     if(msg != NULL)
     {
@@ -187,17 +219,17 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
             *msg = temp;
     }   
     
-    if ( ucErr == OS_TIMEOUT ) 
+    if (err3 == OS_ERR_TIMEOUT) 
         timeout = SYS_ARCH_TIMEOUT;
     else
     {
-    	LWIP_ASSERT( "OSQPend ", ucErr == OS_NO_ERR );
+    	LWIP_ASSERT( "OSQPend ", err3 == OS_ERR_NONE);
     	
-        timeout_new = OSTimeGet(&p_err);
+        // timeout_new = OSTimeGet((OS_ERR *)&err3);
         if (timeout_new>timeout) timeout_new = timeout_new - timeout;
         else timeout_new = 0xffffffff - timeout + timeout_new;
         
-        timeout = timeout_new * 1000 / OS_TICKS_PER_SEC + 1; //convert to milisecond
+        timeout = timeout_new * 1000 / OS_CFG_TICK_RATE_HZ + 1; //convert to milisecond
     }
 
 	return timeout; 
@@ -209,11 +241,17 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
 sys_sem_t
 sys_sem_new(u8_t count)
 {
-	sys_sem_t pSem;
+	// sys_sem_t pSem;
+    OS_SEM new_sem;
+    OS_ERR err3;
 
-        pSem = OSSemCreate((u16_t)count);
-        LWIP_ASSERT("OSSemCreate ",pSem != NULL );
-        return pSem;
+    // pSem = OSSemCreate((u16_t)count);
+    OSSemCreate((OS_SEM     *) &new_sem,
+                (CPU_CHAR   *) "new_sem",
+                (OS_SEM_CTR  ) count,
+                (OS_ERR     *) &err3);
+    LWIP_ASSERT("OSSemCreate ", err3 == OS_ERR_NONE);
+
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -235,14 +273,14 @@ sys_sem_new(u8_t count)
 u32_t
 sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
 {
-    OS_ERR *p_err;
+    OS_ERR err3;
     u8_t ucErr;
     u32_t ucos_timeout, timeout_new;
     
     // timeout ��λ��ms�� ת��Ϊucos_timeout ��λ��TICK��
     if(	timeout != 0)
     {
-        ucos_timeout = (timeout * OS_TICKS_PER_SEC) / 1000; // convert to timetick
+        ucos_timeout = (timeout * OS_CFG_TICK_RATE_HZ) / 1000; // convert to timetick
         if(ucos_timeout < 1)
             ucos_timeout = 1;
         else if(ucos_timeout > 65536) // uC/OS only support u16_t pend
@@ -250,22 +288,27 @@ sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
     }
     else ucos_timeout = 0;
     
-    timeout = OSTimeGet(&p_err); // ��¼��ʼʱ��
+    timeout = OSTimeGet((OS_ERR *)&err3); // ��¼��ʼʱ��
     
-    OSSemPend ((OS_EVENT *)sem,(u16_t)ucos_timeout, (u8_t *)&ucErr);
+    // OSSemPend ((OS_EVENT *)sem,(u16_t)ucos_timeout, (u8_t *)&ucErr);
+    OSSemPend((OS_SEM   *) &sem,
+            (OS_TICK     ) ucos_timeout,
+            (OS_OPT      ) OS_OPT_PEND_BLOCKING,
+            (CPU_TS     *) &timeout_new,
+            (OS_ERR     *) &err3);
     
-    if(ucErr == OS_TIMEOUT)
+    if(err3 == OS_ERR_TIMEOUT)
         timeout = SYS_ARCH_TIMEOUT;	// only when timeout!
     else
     {    
-    	//LWIP_ASSERT( "OSSemPend ", ucErr == OS_NO_ERR );
+    	//LWIP_ASSERT( "OSSemPend ", ucErr == OS_ERR_NONE );
         //for pbuf_free, may be called from an ISR
         
-        timeout_new = OSTimeGet(&p_err); // ��¼��ֹʱ��
+        // timeout_new = OSTimeGet((OS_ERR *)&err3); // ��¼��ֹʱ��
         if (timeout_new>=timeout) timeout_new = timeout_new - timeout;
         else timeout_new = 0xffffffff - timeout + timeout_new;
         
-        timeout = (timeout_new * 1000 / OS_TICKS_PER_SEC + 1); //convert to milisecond Ϊʲô��1��
+        timeout = (timeout_new * 1000 / OS_CFG_TICK_RATE_HZ + 1); //convert to milisecond Ϊʲô��1��
     }
     
     return timeout;
@@ -276,11 +319,14 @@ sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
 void
 sys_sem_signal(sys_sem_t sem)
 {
-    u8_t ucErr;
-    ucErr = OSSemPost((OS_EVENT *)sem);
+    // u8_t ucErr;
+    // ucErr = OSSemPost((OS_EVENT *)sem);
+    OS_ERR err3;
+
+    OSSemPost((OS_SEM *)sem, (OS_OPT) OS_OPT_POST_1, (OS_ERR *) &err3);
     
     // May be called when a connection is already reset, should not check...
-    // LWIP_ASSERT( "OSSemPost ", ucErr == OS_NO_ERR );
+    // LWIP_ASSERT( "OSSemPost ", ucErr == OS_ERR_NONE );
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -288,9 +334,11 @@ sys_sem_signal(sys_sem_t sem)
 void
 sys_sem_free(sys_sem_t sem)
 {
-    u8_t     ucErr;
-    (void)OSSemDel( (OS_EVENT *)sem, OS_DEL_ALWAYS, &ucErr );
-    LWIP_ASSERT( "OSSemDel ", ucErr == OS_NO_ERR );
+    // u8_t     ucErr;
+    // (void)OSSemDel( (OS_EVENT *)sem, OS_DEL_ALWAYS, &ucErr );
+    OS_ERR err3;
+    OSSemDel((OS_SEM *)sem, (OS_OPT) OS_OPT_DEL_ALWAYS, (OS_ERR *) &err3);
+    LWIP_ASSERT( "OSSemDel ", err3 == OS_ERR_NONE );
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -298,17 +346,25 @@ sys_sem_free(sys_sem_t sem)
 void
 sys_init(void)
 {
-
-	u8_t i, ucErr;
+    OS_ERR err3;
+	u8_t i;
         
         // init mem used by sys_mbox_t, use ucosII functions
         // ָ���ڴ���ʼ��ַ��4�ֽڶ���
-        pQueueMem = OSMemCreate( 
-                                (void*)((u32_t)((u32_t)pcQueueMemoryPool+MEM_ALIGNMENT-1) & ~(MEM_ALIGNMENT-1)), 
-                                MAX_QUEUES, sizeof(TQ_DESCR), &ucErr 
-                                    );
+        // pQueueMem = OSMemCreate( 
+        //                         (void*)((u32_t)((u32_t)pcQueueMemoryPool+MEM_ALIGNMENT-1) & ~(MEM_ALIGNMENT-1)), 
+        //                         MAX_QUEUES, sizeof(TQ_DESCR), &ucErr 
+        //                             );
+        OSMemGet((OS_MEM   *) pQueueMem,
+                (OS_ERR    *) &err3);
+        OSMemCreate((OS_MEM    *) pQueueMem,
+                   (CPU_CHAR   *) "pQueueMem",
+                   (void       *) ((u32_t)((u32_t)pcQueueMemoryPool+MEM_ALIGNMENT-1) & ~(MEM_ALIGNMENT-1)),
+                   (OS_MEM_QTY  ) MAX_QUEUES,
+                   (OS_MEM_SIZE ) sizeof(TQ_DESCR),
+                   (OS_ERR     *) &err3);
         
-        LWIP_ASSERT( "OSMemCreate ", ucErr == OS_NO_ERR );
+        LWIP_ASSERT( "OSMemCreate ", err3 == OS_ERR_NONE);
 
 	// Initialize the the per-thread sys_timeouts structures
 	// make sure there are no valid pids in the list
@@ -340,8 +396,8 @@ sys_arch_timeouts(void)
     
     null_timeouts.next = NULL;
     
-    OSTaskQuery(OS_PRIO_SELF,&curr_task_pcb);
-    curr_prio = curr_task_pcb.OSTCBPrio;
+    OSTaskQuery(OS_PRIO_INIT,&curr_task_pcb);
+    curr_prio = curr_task_pcb.Prio;
 
     ubldx = (u8_t)(curr_prio - LWIP_START_PRIO);
     
@@ -371,6 +427,7 @@ sys_thread_t sys_thread_new(char *name, void (* thread)(void *arg), void *arg, i
 {
     u8_t ubPrio = 0;
     u8_t ucErr;
+    OS_ERR err3;
     
     arg = arg;
     
@@ -381,15 +438,23 @@ sys_thread_t sys_thread_new(char *name, void (* thread)(void *arg), void *arg, i
         if(stacksize > LWIP_STK_SIZE)   // �����ջ��С������LWIP_STK_SIZE
             stacksize = LWIP_STK_SIZE;
         
-#if (OS_TASK_STAT_EN == 0)
-        OSTaskCreate(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio);
-#else
-        OSTaskCreateExt(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio
-                        ,ubPrio,&LWIP_TASK_STK[prio-1][0],stacksize,(void *)0,OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
-#endif
-        OSTaskNameSet(ubPrio, (u8_t*)name, &ucErr);
-        
-//        return ubPrio;
+        // OSTaskCreate(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio);
+        OSTaskCreate((OS_TCB     *)&TcpServerTCB[availableTcbIndex],
+                    (CPU_CHAR   *) name,
+                    (OS_TASK_PTR ) thread,
+                    (void       *) arg,
+                    (OS_PRIO     ) ubPrio,
+                    (CPU_STK    *) &LWIP_TASK_STK[prio-1][0],
+                    (CPU_STK_SIZE) stacksize / 10,
+                    (CPU_STK_SIZE) stacksize,
+                    (OS_MSG_QTY  ) 0,
+                    (OS_TICK     ) 0,
+                    (void       *) 0,
+                    (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                    (OS_ERR     *)&err3);
+        availableTcbIndex++;
+        // OSTaskCreateExt(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio
+        //                 ,ubPrio,&LWIP_TASK_STK[prio-1][0],stacksize,(void *)0,OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
     }
         return ubPrio;
 }

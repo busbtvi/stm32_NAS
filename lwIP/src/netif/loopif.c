@@ -39,7 +39,7 @@
 
 #if LWIP_HAVE_LOOPIF
 
-#include "netif/loopif.h"
+#include "loopif.h"
 #include "snmp.h"
 
 /**

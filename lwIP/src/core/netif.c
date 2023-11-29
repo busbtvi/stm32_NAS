@@ -44,7 +44,7 @@
 #include "tcp.h"
 #include "snmp.h"
 #include "igmp.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 #if ENABLE_LOOPBACK
 #include "sys.h"
 #if LWIP_NETIF_LOOPBACK_MULTITHREADING

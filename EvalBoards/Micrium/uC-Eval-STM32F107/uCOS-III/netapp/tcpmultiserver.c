@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "tcpmultiserver.h"
 #include "mem.h" /* Ϊ�˷����ڴ� */
-#include <lwip/sockets.h> /* ʹ��BSD Socket�ӿڱ������sockets.h���ͷ�ļ� */
+#include <sockets.h>
 #include "includes.h"
 
 #include "app_cfg.h"
@@ -43,7 +43,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 static char send_data[] = "Hello Client[ ]\n"; /* �����õ������� */
-static OS_STK   TcpServerStack[TCPMULTISERVER_STK_SIZE];
+static CPU_STK   TcpServerStack[TCPMULTISERVER_STK_SIZE];
+static  OS_TCB   TcpServerTCB;
 
 /* Private function prototypes -----------------------------------------------*/
 static void tcpserv(void* parameter);
@@ -234,10 +235,11 @@ static void tcpserv(void* parameter)
 */
 static void tcpmultiserver_thread(void *arg)
 {
+    OS_ERR err3;
     tcpserv(arg);
     
     printf("Delete Tcpmultiserver thread.\n");
-    OSTaskDel(OS_PRIO_SELF);
+    OSTaskDel(&TcpServerTCB, &err3);
 }
 
 /**
@@ -245,16 +247,28 @@ static void tcpmultiserver_thread(void *arg)
 */
 void tcpmultiserver_init()
 {
-    CPU_INT08U  os_err;
+    // CPU_INT08U  os_err;
     
-    OSTaskCreate(tcpmultiserver_thread, 
-                 NULL, 
-                 &TcpServerStack[TCPMULTISERVER_STK_SIZE - 1], 
-                 LWIP_TCPMULTISERVER_PRIO
-                     );
-#if (OS_TASK_NAME_SIZE >= 11)
-    OSTaskNameSet(LWIP_TCPMULTISERVER_PRIO, (CPU_INT08U *)"tcpmulti", &os_err);
-#endif
+    // OSTaskCreate(tcpmultiserver_thread, 
+    //              NULL, 
+    //              &TcpServerStack[TCPMULTISERVER_STK_SIZE - 1], 
+    //              LWIP_TCPMULTISERVER_PRIO
+    //                  );
+    OS_ERR err3;
+
+    OSTaskCreate((OS_TCB     *)&TcpServerTCB,
+                (CPU_CHAR   *)"tcpmultiserver",
+                (OS_TASK_PTR ) tcpmultiserver_thread,
+                (void       *) 0,
+                (OS_PRIO     ) LWIP_TCPMULTISERVER_PRIO,
+                (CPU_STK    *) &TcpServerStack[0],
+                (CPU_STK_SIZE) TCPMULTISERVER_STK_SIZE / 10,
+                (CPU_STK_SIZE) TCPMULTISERVER_STK_SIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *)&err3);
 }
 
 /*-- File end --*/

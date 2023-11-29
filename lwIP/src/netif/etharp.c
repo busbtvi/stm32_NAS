@@ -53,10 +53,10 @@
 #include "snmp.h"
 #include "dhcp.h"
 #include "autoip.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 #if PPPOE_SUPPORT
-#include "netif/ppp_oe.h"
+#include "ppp_oe.h"
 #endif /* PPPOE_SUPPORT */
 
 #include <string.h>

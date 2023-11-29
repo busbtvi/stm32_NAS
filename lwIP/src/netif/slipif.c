@@ -32,7 +32,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE. 
  *
- * This file is built upon the file: src/arch/rtxc/netif/sioslip.c
+ * This file is built upon the file: src/arch/rtxc/sioslip.c
  *
  * Author: Magnus Ivarsson <magnus.ivarsson(at)volvo.com> 
  */
@@ -42,7 +42,7 @@
  * provided by another file. They are sio_open, sio_recv and sio_send
  */
 
-#include "netif/slipif.h"
+#include "slipif.h"
 #include "opt.h"
 
 #if LWIP_HAVE_SLIPIF

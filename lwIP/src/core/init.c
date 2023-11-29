@@ -54,7 +54,7 @@
 #include "autoip.h"
 #include "igmp.h"
 #include "dns.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 /* Compile-time sanity checks for configuration errors.
  * These can be done independently of LWIP_DEBUG, without penalty.

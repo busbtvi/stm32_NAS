@@ -113,7 +113,7 @@ netio_close(void *arg, struct tcp_pcb *pcb)
 static err_t
 netio_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
-  OS_ERR *p_err;
+  OS_ERR err3;
   struct netio_state *ns = arg;
   u8_t * data_ptr;
   u32_t data_cntr;
@@ -156,7 +156,7 @@ netio_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
               } else if (ns->cmd == NETIO_CMD_S2C) { // Send Data to Client
                 ns->state = NETIO_STATE_SEND_DATA;
                 /* start timer */
-                ns->time_stamp = OSTimeGet(&p_err); // Get OS TimeTick
+                ns->time_stamp = OSTimeGet((OS_ERR *)&err3); // Get OS TimeTick
                 /* send first round of data */
 
                 len = tcp_sndbuf(pcb);
@@ -251,7 +251,7 @@ netio_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 static err_t
 netio_sent(void *arg, struct tcp_pcb *pcb, u16_t len)
 {
-  OS_ERR *p_err;
+  OS_ERR err3;
   struct netio_state *ns = arg;
   err_t err = ERR_OK;
 
@@ -261,7 +261,7 @@ netio_sent(void *arg, struct tcp_pcb *pcb, u16_t len)
     ns->cntr = 0;
 
     /* check if timer expired */
-    if (OSTimeGet(&p_err) - ns->time_stamp > 600) { // �ظ�����600ms
+    if (OSTimeGet((OS_ERR *)&err3) - ns->time_stamp > 600) { // �ظ�����600ms
       ns->buf_ptr[0] = 1;
       ns->state = NETIO_STATE_SEND_DATA_LAST;
     } else {

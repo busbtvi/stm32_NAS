@@ -379,7 +379,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\uCOS-III;..\..\BSP;..\..\BSP\OS\uCOS-III;..\..\BSP\ST\STM32\inc;..\..\BSP\KeilMDK;..\..\..\..\..\lwIP\port;..\..\..\..\..\lwIP\port\include;..\..\..\..\..\lwIP\port\include\arch;..\..\..\..\..\lwIP\port\include\netif;..\..\..\..\..\lwIP\port\netif;..\..\..\..\..\lwIP\src\api;..\..\..\..\..\lwIP\src\core;..\..\..\..\..\lwIP\src\core\ipv4;..\..\..\..\..\lwIP\src\core\ipv6;..\..\..\..\..\lwIP\src\core\snmp;..\..\..\..\..\lwIP\src\include\ipv4\lwip;..\..\..\..\..\lwIP\src\include\ipv6\lwip;..\..\..\..\..\lwIP\src\include\lwip;..\..\..\..\..\lwIP\src\include\netif;..\..\..\..\..\lwIP\src\netif;..\..\..\..\..\lwIP\src\netif\ppp;..\..\..\..\..\uC-CPU;..\..\..\..\..\uC-CPU\ARM-Cortex-M3\RealView;..\..\..\..\..\uC-LIB;..\..\..\..\..\uC-LIB\Ports\ARM-Cortex-M3\RealView;..\..\..\..\..\uCOS-III\Source;..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView</IncludePath>
+              <IncludePath>..\..\uCOS-III;..\..\BSP;..\..\BSP\OS\uCOS-III;..\..\BSP\ST\STM32\inc;..\..\BSP\KeilMDK;..\..\..\..\..\lwIP\port;..\..\..\..\..\lwIP\port\include;..\..\..\..\..\lwIP\port\include\arch;..\..\..\..\..\lwIP\port\include\netif;..\..\..\..\..\lwIP\port\netif;..\..\..\..\..\lwIP\src\api;..\..\..\..\..\lwIP\src\core;..\..\..\..\..\lwIP\src\core\ipv4;..\..\..\..\..\lwIP\src\core\snmp;..\..\..\..\..\lwIP\src\include\ipv4\lwip;..\..\..\..\..\lwIP\src\include\lwip;..\..\..\..\..\lwIP\src\include\netif;..\..\..\..\..\lwIP\src\netif;..\..\..\..\..\lwIP\src\netif\ppp;..\..\..\..\..\uC-CPU;..\..\..\..\..\uC-CPU\ARM-Cortex-M3\RealView;..\..\..\..\..\uC-LIB;..\..\..\..\..\uC-LIB\Ports\ARM-Cortex-M3\RealView;..\..\..\..\..\uCOS-III\Source;..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -597,21 +597,6 @@
               <FileName>udpserver.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\netapp\udpserver.h</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>ETHLib</GroupName>
-          <Files>
-            <File>
-              <FileName>stm32_eth.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\BSP\ST\ETH\inc\stm32_eth.h</FilePath>
-            </File>
-            <File>
-              <FileName>stm32_eth.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\BSP\ST\ETH\src\stm32_eth.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1349,26 +1334,6 @@
               <FilePath>..\..\..\..\..\lwIP\src\core\ipv4\ip_frag.c</FilePath>
             </File>
             <File>
-              <FileName>icmp6.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\core\ipv6\icmp6.c</FilePath>
-            </File>
-            <File>
-              <FileName>inet6.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\core\ipv6\inet6.c</FilePath>
-            </File>
-            <File>
-              <FileName>ip6.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\core\ipv6\ip6.c</FilePath>
-            </File>
-            <File>
-              <FileName>ip6_addr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\core\ipv6\ip6_addr.c</FilePath>
-            </File>
-            <File>
               <FileName>asn1_dec.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\lwIP\src\core\snmp\asn1_dec.c</FilePath>
@@ -1432,26 +1397,6 @@
               <FileName>ip_frag.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\..\..\lwIP\src\include\ipv4\lwip\ip_frag.h</FilePath>
-            </File>
-            <File>
-              <FileName>icmp.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\include\ipv6\lwip\icmp.h</FilePath>
-            </File>
-            <File>
-              <FileName>inet.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\include\ipv6\lwip\inet.h</FilePath>
-            </File>
-            <File>
-              <FileName>ip.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\include\ipv6\lwip\ip.h</FilePath>
-            </File>
-            <File>
-              <FileName>ip_addr.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\include\ipv6\lwip\ip_addr.h</FilePath>
             </File>
             <File>
               <FileName>api.h</FileName>

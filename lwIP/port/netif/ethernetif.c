@@ -48,10 +48,10 @@
 #include "mem.h"
 #include "pbuf.h"
 #include "sys.h"
-#include <lwip/stats.h>
-#include <lwip/snmp.h>
-#include "netif/etharp.h"
-#include "netif/ppp_oe.h"
+#include <stats.h>
+#include <snmp.h>
+#include "etharp.h"
+#include "ppp_oe.h"
 #include "err.h"
 #include "ethernetif.h"
 

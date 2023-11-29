@@ -47,7 +47,7 @@
 #include "udp.h"
 #include "snmp_asn1.h"
 #include "snmp_structs.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 /**
  * IANA assigned enterprise ID for lwIP is 26381

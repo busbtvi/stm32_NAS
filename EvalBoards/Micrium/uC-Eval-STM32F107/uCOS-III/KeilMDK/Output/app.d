@@ -1,8 +1,8 @@
 ./output/app.o: ..\app.c ..\..\uCOS-III\includes.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdlib.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\math.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdlib.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\math.h \
   ..\..\..\..\..\uC-CPU\ARM-Cortex-M3\RealView\cpu.h \
   ..\..\..\..\..\uC-CPU\cpu_def.h ..\..\uCOS-III\cpu_cfg.h \
   ..\..\..\..\..\uC-LIB\lib_def.h ..\..\..\..\..\uC-LIB\lib_ascii.h \
@@ -40,4 +40,4 @@
   ..\..\uCOS-III\os_cfg.h ..\..\..\..\..\uCOS-III\Source\os_type.h \
   ..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView\os_cpu.h \
   ..\..\BSP\bsp_ser.h ..\..\BSP\bsp_i2c.h ..\..\BSP\bsp_stlm75.h \
-  ..\..\..\..\..\lwIP\port\include\lwip.h
+  ..\..\..\..\..\lwIP\port\include\lwIP.h

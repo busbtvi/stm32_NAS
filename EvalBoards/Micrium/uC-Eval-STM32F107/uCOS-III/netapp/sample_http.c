@@ -111,7 +111,7 @@ http_sent(void *arg, struct tcp_pcb *pcb, u16_t len)
 static err_t
 http_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
-  OS_ERR *p_err;
+  OS_ERR err3;
   int i;
   char *data;
   struct http_state *hs;
@@ -153,7 +153,7 @@ http_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 			sprintf(&demo[459],"%.6d",counter);
 			demo[465] = 0x20;
 			//runtime
-			runtime = OSTimeGet(&p_err) / 100;
+			runtime = OSTimeGet((OS_ERR *)&err3) / 100;
 			sec = (u8_t)runtime % 60;
 			min = (u8_t)((runtime / 60) % 60);
 			hour = (u8_t)((runtime / 3600) % 24);

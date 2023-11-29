@@ -46,21 +46,21 @@ TEST_BLOCK, *PTEST_BLOCK;
 
 void TTCP_InitStatistics(PTEST_BLOCK pTBLK)
 {
-	OS_ERR *p_err;
+	OS_ERR err3;
 
    pTBLK->m_numCalls = 0;       // # of I/O system calls
    pTBLK->m_nbytes = 0;      // bytes on net
 
-   pTBLK->m_tStart = OSTimeGet(&p_err);//GetTickCount();
+   pTBLK->m_tStart = OSTimeGet((OS_ERR *)&err3);//GetTickCount();
 }
 
 
 void TTCP_LogStatistics(PTEST_BLOCK pTBLK)
 {
-	OS_ERR *p_err;
+	OS_ERR err3;
 	float realt;                 // user, real time (seconds)
 
-	pTBLK->m_tFinish = OSTimeGet(&p_err);//GetTickCount();
+	pTBLK->m_tFinish = OSTimeGet((OS_ERR *)&err3);//GetTickCount();
 
 	realt = ((float )pTBLK->m_tFinish - (float )pTBLK->m_tStart)/100;//1000
 

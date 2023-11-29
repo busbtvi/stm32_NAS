@@ -50,7 +50,7 @@
 
 #include "netif.h"
 #include "udp.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 /* AutoIP Timing */
 #define AUTOIP_TMR_INTERVAL      100

@@ -17,18 +17,18 @@
 
 
 /* Includes ------------------------------------------------------------------*/
-#include "lwIP/memp.h"
+#include "memp.h"
 #include "lwIP.h"
-#include "lwIP/tcp.h"
-#include "lwIP/udp.h"
-#include "lwIP/tcpip.h"
-#include "netif/etharp.h"
-#include "lwIP/dhcp.h"
+#include "tcp.h"
+#include "udp.h"
+#include "tcpip.h"
+#include "etharp.h"
+#include "dhcp.h"
 #include "ethernetif.h"
-#include "stm32f10x.h"
+// #include "stm32f10x.h"
 #include "arch/sys_arch.h"
 #include <stdio.h>
-#include "stm3210c_eval_lcd.h"
+// #include "stm3210c_eval_lcd.h"
 #include "stm32_eth.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,8 +87,8 @@ void Init_lwIP(void)
     sys_sem_free(sem);
     printf("TCP/IP initialized.\n");
     
-    rx_sem = sys_sem_new(0);                // create receive semaphore
-    tx_sem = sys_sem_new(0);                // create transmit semaphore
+    // rx_sem = sys_sem_new(0);                // create receive semaphore
+    // tx_sem = sys_sem_new(0);                // create transmit semaphore
     
     // sys_thread_new("Rx Thread", Rx_Thread, &netif, LWIP_STK_SIZE, DrvRx_Thread_PRIO); //lwIP Task 1
     // sys_thread_new(Tx_Thread, NULL, DrvTx_Thread_PRIO); //lwIP Task 2
@@ -145,18 +145,12 @@ void Display_IPAddress(void)
         if(netif.flags & NETIF_FLAG_DHCP)
         {   // IP��ַ��DHCPָ��
             // Display the IP address
-            LCD_DisplayStringLine(Line1, "  IP assigned   ");
-            LCD_DisplayStringLine(Line2, "by DHCP server  ");
-            LCD_DisplayStringLine(Line3, iptxt);
+            printf("IP assigned\nby DHCP server %s\n", iptxt);
         }
         else
 #endif  // ��̬IP��ַ
         {   /* Display the IP address */
-            LCD_DisplayStringLine(Line1, " Static IP Addr ");
-            LCD_DisplayStringLine(Line2, iptxt);
-            LCD_DisplayStringLine(Line3, "                ");
-            LCD_DisplayStringLine(Line4, "                ");
-            
+            printf("Static IP Addr %s\n", iptxt);
 //            LCD_Puts("0123456789abcdef" "123456789abcdef0" "23456789abcdef01" "3456789abcdef012");
         }
         
@@ -164,10 +158,7 @@ void Display_IPAddress(void)
 #if LWIP_DHCP
     else if(IPaddress == 0)
     {   // �ȴ�DHCP����IP
-        LCD_DisplayStringLine(Line1, " Looking for    ");
-        LCD_DisplayStringLine(Line2, " DHCP server    ");
-        LCD_DisplayStringLine(Line3, " please wait... ");
-        LCD_DisplayStringLine(Line4, "                ");
+        printf("Looking for DHCP server please wait ...\n")
         
         /* If no response from a DHCP server for MAX_DHCP_TRIES times */
         /* stop the dhcp client and set a static IP address */
@@ -177,7 +168,7 @@ void Display_IPAddress(void)
             struct ip_addr netmask;
             struct ip_addr gw;
             
-            LCD_DisplayStringLine(Line4, " DHCP timeout   ");
+            printf("DHCP timeout\n");
             dhcp_stop(&netif);
             
             IP4_ADDR(&ipaddr, 10, 21, 11, 245);

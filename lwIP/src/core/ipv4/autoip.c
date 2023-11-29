@@ -71,7 +71,7 @@
 #include "ip_addr.h"
 #include "netif.h"
 #include "autoip.h"
-#include "netif/etharp.h"
+#include "etharp.h"
 
 #include <stdlib.h>
 #include <string.h>

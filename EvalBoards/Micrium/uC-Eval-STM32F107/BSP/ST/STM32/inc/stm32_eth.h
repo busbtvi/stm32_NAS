@@ -28,7 +28,26 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f10x.h"
+// #include "stm32f10x_cl.h"
+#include "stm32f10x_type.h"
+#include "stm32f10x_map.h"
+#include "stdint.h"
+#include <cpu.h>
+
+/**
+ * IO definitions
+ *
+ * define access restrictions to peripheral registers
+ */
+
+#ifdef __cplusplus
+#define     __I     volatile                  /*!< defines 'read only' permissions      */
+#else
+#define     __I     volatile const            /*!< defines 'read only' permissions      */
+#endif
+#define     __O     volatile                  /*!< defines 'write only' permissions     */
+#define     __IO    volatile                  /*!< defines 'read / write' permissions   */
+
 
 /** @addtogroup STM32_ETH_Driver
   * @{
@@ -41,7 +60,7 @@
 /** 
   * @brief  ETH MAC Init structure definition
   * @note   The user should not configure all the ETH_InitTypeDef structure's fields. 
-  *   By calling the ETH_StructInit function the structure’s fields are set to their default values.
+  *   By calling the ETH_StructInit function the structureï¿½s fields are set to their default values.
   *   Only the parameters that will be set to a non-default value should be configured.  
   */ 
 typedef struct {

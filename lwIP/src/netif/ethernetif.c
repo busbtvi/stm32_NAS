@@ -53,8 +53,8 @@
 #include "sys.h"
 #include <lwip/stats.h>
 #include <lwip/snmp.h>
-#include "netif/etharp.h"
-#include "netif/ppp_oe.h"
+#include "etharp.h"
+#include "ppp_oe.h"
 
 /* Define those to better describe your network interface. */
 #define IFNAME0 'e'

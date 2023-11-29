@@ -20,6 +20,7 @@
 #include "udpserver.h"
 #include <sockets.h> /* ʹ��BSD socket����Ҫ����sockets.hͷ�ļ� */
 #include <includes.h>
+#include <string.h>
 #include "mem.h"
 
 #include "app_cfg.h"
@@ -39,7 +40,8 @@
 
 
 /* Private variables ---------------------------------------------------------*/
-static OS_STK   UdpServerStack[UDPSERVER_STK_SIZE];
+static CPU_STK   UdpServerStack[UDPSERVER_STK_SIZE];
+static  OS_TCB   UdpServerTCB;
 
 /* Private function prototypes -----------------------------------------------*/
 static void udpserv(void* paramemter);
@@ -125,10 +127,11 @@ static void udpserv(void* paramemter)
 
 static void udpserver_thread(void* arg)
 {
+    OS_ERR err3;
     udpserv(arg);
     
     printf("Delete Udpserver thread.\n");
-    OSTaskDel(OS_PRIO_SELF);
+    OSTaskDel(&UdpServerTCB, &err3);
 }
 
 
@@ -137,16 +140,28 @@ static void udpserver_thread(void* arg)
 */
 void udpserver_init()
 {
-    CPU_INT08U  os_err;
+    // CPU_INT08U  os_err;
     
-    OSTaskCreate(udpserver_thread, 
-                 NULL, 
-                 &UdpServerStack[UDPSERVER_STK_SIZE - 1], 
-                 LWIP_UDPSERVER_PRIO
-                     );
-#if (OS_TASK_NAME_SIZE >= 11)
-    OSTaskNameSet(LWIP_UDPSERVER_PRIO, (CPU_INT08U *)"udpserver", &os_err);
-#endif
+    // OSTaskCreate(udpserver_thread, 
+    //              NULL, 
+    //              &UdpServerStack[UDPSERVER_STK_SIZE - 1], 
+    //              LWIP_UDPSERVER_PRIO
+    //                  );
+    OS_ERR err3;
+
+    OSTaskCreate((OS_TCB     *)&UdpServerTCB,
+                (CPU_CHAR   *)"UDP Server",
+                (OS_TASK_PTR ) udpserver_thread,
+                (void       *) 0,
+                (OS_PRIO     ) LWIP_UDPSERVER_PRIO,
+                (CPU_STK    *) &UdpServerStack[0],
+                (CPU_STK_SIZE) UDPSERVER_STK_SIZE / 10,
+                (CPU_STK_SIZE) UDPSERVER_STK_SIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *)&err3);
 }
 
 /*-- File end --*/
