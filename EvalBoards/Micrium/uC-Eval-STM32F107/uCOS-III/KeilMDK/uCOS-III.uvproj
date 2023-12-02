@@ -894,6 +894,16 @@
               <FilePath>..\..\BSP\ST\STM32\inc\cortexm3_macro.h</FilePath>
             </File>
             <File>
+              <FileName>stm32_eth.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\BSP\ST\STM32\inc\stm32_eth.h</FilePath>
+            </File>
+            <File>
+              <FileName>stm32_eth.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\BSP\ST\STM32\src\stm32_eth.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_adc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\BSP\ST\STM32\inc\stm32f10x_adc.h</FilePath>
@@ -1567,11 +1577,6 @@
               <FileName>etharp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\..\..\lwIP\src\netif\etharp.c</FilePath>
-            </File>
-            <File>
-              <FileName>ethernetif.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\..\..\lwIP\src\netif\ethernetif.c</FilePath>
             </File>
             <File>
               <FileName>loopif.c</FileName>

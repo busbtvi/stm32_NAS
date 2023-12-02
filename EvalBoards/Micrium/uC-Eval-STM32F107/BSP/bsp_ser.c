@@ -42,6 +42,7 @@
 
 #define  BSP_SER_MODULE
 #include <bsp.h>
+#include <stdio.h>
 
 
 /*

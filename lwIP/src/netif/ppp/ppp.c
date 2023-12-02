@@ -504,6 +504,7 @@ pppOverSerialOpen(sio_fd_t fd, void (*linkStatusCB)(void *ctx, int errCode, void
 {
   PPPControl *pc;
   int pd;
+  OS_ERR err3;
 
   /* Find a free PPP session descriptor. Critical region? */
   for (pd = 0; pd < NUM_PPP && pppControl[pd].openFlag != 0; pd++);
@@ -554,7 +555,10 @@ pppOverSerialOpen(sio_fd_t fd, void (*linkStatusCB)(void *ctx, int errCode, void
     sys_thread_new(PPP_THREAD_NAME, pppMain, (void*)pd, PPP_THREAD_STACKSIZE, PPP_THREAD_PRIO);
     if(!linkStatusCB) {
       while(pd >= 0 && !pc->if_up) {
-        sys_msleep(500);
+        // sys_msleep(500);
+        OSTimeDlyHMSM(0, 0, 0, 500,
+                      OS_OPT_TIME_HMSM_STRICT,
+                      &err3);
         if (lcp_phase[pd] == PHASE_DEAD) {
           pppClose(pd);
           if (pc->errCode) {
@@ -589,6 +593,7 @@ int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const cha
 {
   PPPControl *pc;
   int pd;
+  OS_ERR err3;
 
   LWIP_UNUSED_ARG(service_name);
   LWIP_UNUSED_ARG(concentrator_name);
@@ -650,7 +655,10 @@ int pppOverEthernetOpen(struct netif *ethif, const char *service_name, const cha
 
     if(!linkStatusCB) {
       while(pd >= 0 && !pc->if_up) {
-        sys_msleep(500);
+        // sys_msleep(500);
+        OSTimeDlyHMSM(0, 0, 0, 500,
+              OS_OPT_TIME_HMSM_STRICT,
+              &err3);
         if (lcp_phase[pd] == PHASE_DEAD) {
           pppClose(pd);
           if (pc->errCode) {
@@ -676,6 +684,7 @@ pppClose(int pd)
 {
   PPPControl *pc = &pppControl[pd];
   int st = 0;
+  OS_ERR err3;
 
   /* Disconnect */
 #if PPPOE_SUPPORT
@@ -695,7 +704,10 @@ pppClose(int pd)
 
   if(!pc->linkStatusCB) {
     while(st >= 0 && lcp_phase[pd] != PHASE_DEAD) {
-      sys_msleep(500);
+      // sys_msleep(500);
+      OSTimeDlyHMSM(0, 0, 0, 500,
+              OS_OPT_TIME_HMSM_STRICT,
+              &err3);
       break;
     }
   }
@@ -1506,6 +1518,7 @@ pppMain(void *arg)
   struct pbuf *p;
   PPPControl* pc;
   int c;
+  OS_ERR err3;
 
   pc = &pppControl[pd];
 
@@ -1538,7 +1551,10 @@ pppMain(void *arg)
         pppInProc(pd, p->payload, c);
       } else {
         PPPDEBUG((LOG_DEBUG, "pppMain: unit %d sio_read len=%d returned %d\n", pd, p->len, c));
-        sys_msleep(1); /* give other tasks a chance to run */
+        // sys_msleep(1); /* give other tasks a chance to run */
+        OSTimeDlyHMSM(0, 0, 0, 1,
+              OS_OPT_TIME_HMSM_STRICT,
+              &err3);
       }
     }
   }

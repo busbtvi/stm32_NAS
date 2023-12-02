@@ -332,18 +332,18 @@ sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout)
  *
  * @param ms number of milliseconds to sleep
  */
-void
-sys_msleep(u32_t ms)
-{
-  OS_ERR err3;
-  OS_SEM* delaysem = sys_sem_new(0);
+// void
+// sys_msleep(u32_t ms)
+// {
+//   OS_ERR err3;
+//   OS_SEM* delaysem = sys_sem_new(0);
 
-  // sys_sem_wait_timeout(delaysem, ms);
-  OSSemPend(delaysem, ms, OS_OPT_PEND_BLOCKING, NULL, &err3);
+//   // sys_sem_wait_timeout(delaysem, ms);
+//   OSSemPend(delaysem, ms, OS_OPT_PEND_BLOCKING, NULL, &err3);
 
-  // sys_sem_free(delaysem);
-  OSSemDel(delaysem, OS_OPT_DEL_ALWAYS, &err3);
-}
+//   // sys_sem_free(delaysem);
+//   OSSemDel(delaysem, OS_OPT_DEL_ALWAYS, &err3);
+// }
 
 
 #endif /* NO_SYS */

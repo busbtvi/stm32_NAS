@@ -17,7 +17,7 @@
 #include "udp.h"
 
 #include "tcp.h"
-
+#include <stdlib.h>
 
 #define	PCATTCP_VERSION				"2.01.01.08"
 

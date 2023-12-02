@@ -39,13 +39,6 @@
  *
  * define access restrictions to peripheral registers
  */
-
-#ifdef __cplusplus
-#define     __I     volatile                  /*!< defines 'read only' permissions      */
-#else
-#define     __I     volatile const            /*!< defines 'read only' permissions      */
-#endif
-#define     __O     volatile                  /*!< defines 'write only' permissions     */
 #define     __IO    volatile                  /*!< defines 'read / write' permissions   */
 
 

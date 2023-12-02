@@ -169,8 +169,8 @@ static  void  AppTaskStart (void *p_arg){
     cnts = cpu_clk_freq / (CPU_INT32U)OSCfg_TickRate_Hz;        /* Determine nbr SysTick increments                     */
     OS_CPU_SysTickInit(cnts);                                   /* Init uC/OS periodic time src (SysTick).              */
 
-    Init_lwIP();
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
+    Init_lwIP();
 
 #if OS_CFG_STAT_TASK_EN > 0u
     OSStatTaskCPUUsageInit(&err);                               /* Compute CPU capacity with no task running            */

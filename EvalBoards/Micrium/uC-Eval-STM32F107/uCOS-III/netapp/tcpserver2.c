@@ -55,12 +55,12 @@
 
 
 #define CUSTOM_CMD_LED          1       /* ����LED״̬ */
-#define CUSTOM_CMD_ADC          2       /* ��ȡADC״̬ */
-#define CUSTOM_CMD_LCD          3       /* ����LCD״̬ */
+// #define CUSTOM_CMD_ADC          2       /* ��ȡADC״̬ */
+// #define CUSTOM_CMD_LCD          3       /* ����LCD״̬ */
 #define CUSTOM_CMD_ECHO         4       /* ��ȡEcho��Ϣ */ 
 
 #define CUSTOM_ADC_LEN          2       /* ����ADC���ݰ����� */
-#define CUSTOM_LCD_LEN          (16 * 4 + 1) /* ����LCD���ݰ�����*/
+// #define CUSTOM_LCD_LEN          (16 * 4 + 1) /* ����LCD���ݰ�����*/
 #define CUSTOM_ECHO_LEN         (strlen(send_data) + 2) /* ����echo���ݰ����� */
 /* Private macro -------------------------------------------------------------*/
 #define CUSTOM_GET_LENGTH(a)    unpacki16(((unsigned char* )(a)) + CUSTOM_DATA_LEN_OFFSET)
@@ -88,7 +88,7 @@ static int processCMD(unsigned char* buf)
 {
     int send_len = 0;
     u16 magic_num, body_length, adc;
-    u8 cmd, led, lcd_dispbuf[CUSTOM_LCD_LEN];
+    u8 cmd, led; //, lcd_dispbuf[CUSTOM_LCD_LEN];
     unpack(buf, "hhc", &magic_num, &body_length, &cmd); // ��ȡͷ��Ϣ
     
 #if 1
@@ -111,26 +111,26 @@ static int processCMD(unsigned char* buf)
             printf("set led[2] %s\n", led != 0 ? "ON": "OFF");
         }
         break;
-    case CUSTOM_CMD_ADC:
-        {
-            adc = BSP_ADC_GetStatus(1); // ��ȡADCֵ
-            // ���ɷ������ݰ�
-            send_len = pack(buf, "hhch", 
-                            CUSTOM_MAGIC_NUM,  /* Byte[0 1]    magic number */
-                            CUSTOM_ADC_LEN,    /* Byte[2 3]    length       */
-                            CUSTOM_CMD_ADC,    /* Byte[4  ]    command      */
-                            adc                /* Byte[5 6]    adc data     */);
-            printf("send ADC value: %d\n", adc);
-        }
-        break;
-    case CUSTOM_CMD_LCD:
-        {
-            unpack(buf + CUSTOM_HEADER_LEN, "s", &lcd_dispbuf); // ��ȡLCD���ַ�
-            LCD_Clear();
-            LCD_Puts(lcd_dispbuf); /* show received string in 128*64 lcd */
-            printf("lcd display: %s \n", lcd_dispbuf);
-        }
-        break;
+    // case CUSTOM_CMD_ADC:
+    //     {
+    //         adc = BSP_ADC_GetStatus(1); // ��ȡADCֵ
+    //         // ���ɷ������ݰ�
+    //         send_len = pack(buf, "hhch", 
+    //                         CUSTOM_MAGIC_NUM,  /* Byte[0 1]    magic number */
+    //                         CUSTOM_ADC_LEN,    /* Byte[2 3]    length       */
+    //                         CUSTOM_CMD_ADC,    /* Byte[4  ]    command      */
+    //                         adc                /* Byte[5 6]    adc data     */);
+    //         printf("send ADC value: %d\n", adc);
+    //     }
+    //     break;
+    // case CUSTOM_CMD_LCD:
+    //     {
+    //         unpack(buf + CUSTOM_HEADER_LEN, "s", &lcd_dispbuf); // ��ȡLCD���ַ�
+    //         LCD_Clear();
+    //         LCD_Puts(lcd_dispbuf); /* show received string in 128*64 lcd */
+    //         printf("lcd display: %s \n", lcd_dispbuf);
+    //     }
+    //     break;
     case CUSTOM_CMD_ECHO:
         {
             // ���û����ַ���

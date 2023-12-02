@@ -115,9 +115,9 @@ void sys_sem_wait(OS_SEM* sem);
 int sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout);
 
 /* Time functions. */
-#ifndef sys_msleep
-void sys_msleep(u32_t ms); /* only has a (close to) 1 jiffy resolution. */
-#endif
+// #ifndef sys_msleep
+// void sys_msleep(u32_t ms); /* only has a (close to) 1 jiffy resolution. */
+// #endif
 #ifndef sys_jiffies
 u32_t sys_jiffies(void); /* since power up. */
 #endif

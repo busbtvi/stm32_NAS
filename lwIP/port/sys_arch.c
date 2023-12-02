@@ -393,12 +393,11 @@ sys_arch_timeouts(void)
     u8_t curr_prio;
     s8_t ubldx;
 
-    OS_TCB curr_task_pcb;
+    // OS_TCB curr_task_pcb;
     
     null_timeouts.next = NULL;
-    
-    OSTaskQuery(OS_PRIO_INIT,&curr_task_pcb);
-    curr_prio = curr_task_pcb.Prio;
+    // OSTaskQuery(OS_PRIO_INIT,&curr_task_pcb);
+    curr_prio = OSTCBCurPtr->Prio;
 
     ubldx = (u8_t)(curr_prio - LWIP_START_PRIO);
     
