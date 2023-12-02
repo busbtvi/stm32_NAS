@@ -107,12 +107,12 @@ void sys_untimeout(sys_timeout_handler h, void *arg);
 struct sys_timeouts *sys_arch_timeouts(void);
 
 /* Semaphore functions. */
-sys_sem_t sys_sem_new(u8_t count);
-void sys_sem_signal(sys_sem_t sem);
-u32_t sys_arch_sem_wait(sys_sem_t sem, u32_t timeout);
-void sys_sem_free(sys_sem_t sem);
-void sys_sem_wait(sys_sem_t sem);
-int sys_sem_wait_timeout(sys_sem_t sem, u32_t timeout);
+OS_SEM* sys_sem_new(u8_t count);
+void sys_sem_signal(OS_SEM* sem);
+u32_t sys_arch_sem_wait(OS_SEM* sem, u32_t timeout);
+void sys_sem_free(OS_SEM* sem);
+void sys_sem_wait(OS_SEM* sem);
+int sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout);
 
 /* Time functions. */
 #ifndef sys_msleep

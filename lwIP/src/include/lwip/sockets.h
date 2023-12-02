@@ -39,6 +39,7 @@
 #if LWIP_SOCKET /* don't build if not configured for use in lwipopts.h */
 
 #include <stddef.h> /* for size_t */
+#include <string.h> /* for memset */
 
 #include "ip_addr.h"
 #include "inet.h"

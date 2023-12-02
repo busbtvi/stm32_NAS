@@ -44,12 +44,12 @@ static const char send_data[] = "This is TCP Client form uC/OS-II."; /* ���
 void tcpclient(const char* url, int port)
 {
     char *recv_data;
-    struct hostent *host;
+    // struct hostent *host;
     int sock, bytes_received;
     struct sockaddr_in server_addr;
     
        /* ͨ��������ڲ���url���host��ַ��������������������������� */
-   host = gethostbyname(url);
+//    host = gethostbyname(url);
 
    /* �������ڴ�Ž������ݵĻ��� */
    recv_data = mem_malloc(1024);
@@ -73,7 +73,7 @@ void tcpclient(const char* url, int port)
    /* ��ʼ��Ԥ���ӵķ���˵�ַ */
    server_addr.sin_family = AF_INET;
    server_addr.sin_port = htons(port);
-   server_addr.sin_addr = *((struct in_addr *)host->h_addr);
+//    server_addr.sin_addr = *((struct in_addr *)host->h_addr);
    memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
 
    /* ���ӵ������ */

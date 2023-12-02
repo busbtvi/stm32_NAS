@@ -65,7 +65,7 @@
  * use lwIP facilities.
  */
 #ifndef NO_SYS
-#define NO_SYS                          0
+#define NO_SYS                          1
 #endif
 
 /**
@@ -99,9 +99,9 @@
 #endif
 
 /**
-* MEMP_MEM_MALLOC==1: Use mem_malloc/mem_free instead of the lwip pool allocator.
-* Especially useful with MEM_LIBC_MALLOC but handle with care regarding execution
-* speed and usage from interrupts!
+   * MEMP_MEM_MALLOC==1: Use mem_malloc/mem_free instead of the lwip pool allocator.
+   * Especially useful with MEM_LIBC_MALLOC but handle with care regarding execution
+   * speed and usage from interrupts!
 */
 #ifndef MEMP_MEM_MALLOC
 #define MEMP_MEM_MALLOC                 0
@@ -637,7 +637,7 @@
  * transport.
  */
 #ifndef LWIP_DNS
-#define LWIP_DNS                        1
+#define LWIP_DNS                        0
 #endif
 
 /** DNS maximum number of entries to maintain locally. */
@@ -701,7 +701,7 @@
  * LWIP_UDP==1: Turn on UDP.
  */
 #ifndef LWIP_UDP
-#define LWIP_UDP                        1
+#define LWIP_UDP                        0
 #endif
 
 /**

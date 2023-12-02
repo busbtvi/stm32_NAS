@@ -89,7 +89,7 @@ struct lwip_select_cb {
   /** don't signal the same semaphore twice: set to 1 when signalled */
   int sem_signalled;
   /** semaphore to wake up a task waiting for select */
-  sys_sem_t sem;
+  OS_SEM* sem;
 };
 
 /** This struct is used to pass data to the set/getsockopt_internal
@@ -118,9 +118,9 @@ static struct lwip_socket sockets[NUM_SOCKETS];
 static struct lwip_select_cb *select_cb_list;
 
 /** Semaphore protecting the sockets array */
-static sys_sem_t socksem;
+static OS_SEM* socksem;
 /** Semaphore protecting select_cb_list */
-static sys_sem_t selectsem;
+static OS_SEM* selectsem;
 
 /** Table to quickly map an lwIP error (err_t) to a socket error
   * by using -err as an index */
@@ -216,9 +216,11 @@ static int
 alloc_socket(struct netconn *newconn)
 {
   int i;
+  OS_ERR err3;
 
   /* Protect socket array */
-  sys_sem_wait(socksem);
+  // sys_sem_wait(socksem);
+  OSSemPend(socksem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
 
   /* allocate a new socket identifier */
   for (i = 0; i < NUM_SOCKETS; ++i) {
@@ -254,6 +256,7 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
   int newsock;
   struct sockaddr_in sin;
   err_t err;
+  OS_ERR err3;
 
   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_accept(%d)...\n", s));
   sock = get_socket(s);
@@ -309,7 +312,8 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
   nsock = &sockets[newsock];
   LWIP_ASSERT("invalid socket pointer", nsock != NULL);
 
-  sys_sem_wait(socksem);
+  // sys_sem_wait(socksem);
+  OSSemPend(socksem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   /* See event_callback: If data comes in right away after an accept, even
    * though the server task might not have created a new socket yet.
    * In that case, newconn->socket is counted down (newconn->socket--),
@@ -367,6 +371,7 @@ int
 lwip_close(int s)
 {
   struct lwip_socket *sock;
+  OS_ERR err3;
 
   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_close(%d)\n", s));
 
@@ -377,7 +382,8 @@ lwip_close(int s)
 
   netconn_delete(sock->conn);
 
-  sys_sem_wait(socksem);
+  // sys_sem_wait(socksem);
+  OSSemPend(socksem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   if (sock->lastdata) {
     netbuf_delete(sock->lastdata);
   }
@@ -893,6 +899,7 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
   u32_t msectimeout;
   struct lwip_select_cb select_cb;
   struct lwip_select_cb *p_selcb;
+  OS_ERR err3;
 
   LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_select(%d, %p, %p, %p, tvsec=%ld tvusec=%ld)\n",
                   maxfdp1, (void *)readset, (void *) writeset, (void *) exceptset,
@@ -906,7 +913,8 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
   select_cb.sem_signalled = 0;
 
   /* Protect ourselves searching through the list */
-  sys_sem_wait(selectsem);
+  // sys_sem_wait(selectsem);
+  OSSemPend(selectsem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
 
   if (readset)
     lreadset = *readset;
@@ -966,10 +974,12 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
         msectimeout = 1;
     }
     
-    i = sys_sem_wait_timeout(select_cb.sem, msectimeout);
+    // i = sys_sem_wait_timeout(select_cb.sem, msectimeout);
+    OSSemPend(select_cb.sem, msectimeout, OS_OPT_PEND_BLOCKING, NULL, &err3);
     
     /* Take us off the list */
-    sys_sem_wait(selectsem);
+    // sys_sem_wait(selectsem);
+    OSSemPend(selectsem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
     if (select_cb_list == &select_cb)
       select_cb_list = select_cb.next;
     else
@@ -983,7 +993,8 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
     sys_sem_signal(selectsem);
     
     sys_sem_free(select_cb.sem);
-    if (i == 0)  {
+    // if (i == 0)  {
+    if (err3 == OS_ERR_TIMEOUT)  {
       /* Timeout */
       if (readset)
         FD_ZERO(readset);
@@ -1039,6 +1050,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
   int s;
   struct lwip_socket *sock;
   struct lwip_select_cb *scb;
+  OS_ERR err3;
 
   LWIP_UNUSED_ARG(len);
 
@@ -1051,7 +1063,8 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
        * Just count down (or up) if that's the case and we
        * will use the data later. Note that only receive events
        * can happen before the new socket is set up. */
-      sys_sem_wait(socksem);
+      // sys_sem_wait(socksem);
+      OSSemPend(socksem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
       if (conn->socket < 0) {
         if (evt == NETCONN_EVT_RCVPLUS) {
           conn->socket--;
@@ -1070,7 +1083,8 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
     return;
   }
 
-  sys_sem_wait(selectsem);
+  // sys_sem_wait(selectsem);
+  OSSemPend(selectsem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   /* Set event as required */
   switch (evt) {
     case NETCONN_EVT_RCVPLUS:
@@ -1099,7 +1113,8 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
      the list the number of waiting select calls + 1. This list is
      expected to be small. */
   while (1) {
-    sys_sem_wait(selectsem);
+    // sys_sem_wait(selectsem);
+    OSSemPend(selectsem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
     for (scb = select_cb_list; scb; scb = scb->next) {
       if (scb->sem_signalled == 0) {
         /* Test this select call for our socket */

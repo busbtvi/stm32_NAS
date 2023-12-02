@@ -16,18 +16,11 @@ Section Cross References
     app.o(.text) refers to lwip.o(.text) for Init_lwIP
     app.o(.text) refers to lib_mem.o(.text) for Mem_Init
     app.o(.text) refers to os_stat.o(.text) for OSStatTaskCPUUsageInit
-    app.o(.text) refers to bsp_ser.o(.text) for BSP_Ser_Init
+    app.o(.text) refers to bsp_ser.o(.text) for BSP_Ser_Printf
     app.o(.text) refers to app.o(.bss.AppTaskFirstStk) for AppTaskFirstStk
     app.o(.text) refers to app.o(.bss.AppTaskFirstTCB) for AppTaskFirstTCB
-    app.o(.text) refers to app.o(.bss.AppTaskSecondStk) for AppTaskSecondStk
-    app.o(.text) refers to app.o(.bss.AppTaskSecondTCB) for AppTaskSecondTCB
-    app.o(.text) refers to app.o(.bss.AppTaskThirdStk) for AppTaskThirdStk
-    app.o(.text) refers to app.o(.bss.AppTaskThirdTCB) for AppTaskThirdTCB
     app.o(.text) refers to os_time.o(.text) for OSTimeDlyHMSM
     app.o(.text) refers to app.o(.bss.taskFirstCount) for taskFirstCount
-    app.o(.text) refers to stm32f10x_usart.o(.text) for USART_SendData
-    app.o(.text) refers to app.o(.bss.taskSecondCount) for taskSecondCount
-    app.o(.text) refers to app.o(.bss.taskThirdCount) for taskThirdCount
     app.o(.ARM.exidx) refers to app.o(.text) for [Anonymous Symbol]
     os_app_hooks.o(.text) refers to cpu_a.o(.text) for CPU_SR_Save
     os_app_hooks.o(.text) refers to cpu_core.o(.text) for CPU_IntDisMeasStart
@@ -96,7 +89,6 @@ Section Cross References
     sample_ttcp.o(.text) refers to sample_ttcp.o(.rodata.str1.1) for .L.str.8
     sample_ttcp.o(.text) refers to pbuf.o(.text) for pbuf_free
     sample_ttcp.o(.ARM.exidx) refers to sample_ttcp.o(.text) for [Anonymous Symbol]
-    tcpclient.o(.text) refers to netdb.o(.text) for lwip_gethostbyname
     tcpclient.o(.text) refers to mem.o(.text) for mem_malloc
     tcpclient.o(.text) refers to sockets.o(.text) for lwip_socket
     tcpclient.o(.text) refers to inet.o(.text) for htons
@@ -148,7 +140,6 @@ Section Cross References
     tcpserver2.o(.text) refers to bsp.o(.text) for BSP_LED_On
     tcpserver2.o(.text) refers to tcpserver2.o(.rodata.send_data) for send_data
     tcpserver2.o(.ARM.exidx) refers to tcpserver2.o(.text) for [Anonymous Symbol]
-    udpclient.o(.text) refers to netdb.o(.text) for lwip_gethostbyname
     udpclient.o(.text) refers to sockets.o(.text) for lwip_socket
     udpclient.o(.text) refers to inet.o(.text) for htons
     udpclient.o(.text) refers to udpclient.o(.rodata.send_data) for send_data
@@ -620,8 +611,9 @@ Section Cross References
     lwip.o(.text) refers to mem.o(.text) for mem_init
     lwip.o(.text) refers to memp.o(.text) for memp_init
     lwip.o(.text) refers to puts.o(i.puts) for puts
+    lwip.o(.text) refers to lwip.o(.bss.InitLwipSem) for InitLwipSem
+    lwip.o(.text) refers to os_sem.o(.text) for OSSemCreate
     lwip.o(.text) refers to tcpip.o(.text) for tcpip_init
-    lwip.o(.text) refers to sys.o(.text) for sys_sem_wait
     lwip.o(.text) refers to inet.o(.text) for htonl
     lwip.o(.text) refers to ethernetif.o(.text) for Set_MAC_Address
     lwip.o(.text) refers to lwip.o(.bss.netif) for netif
@@ -666,7 +658,6 @@ Section Cross References
     api_lib.o(.text) refers to printfa.o(i.__0printf) for __2printf
     api_lib.o(.text) refers to sys_arch.o(.text) for sys_sem_free
     api_lib.o(.text) refers to memp.o(.text) for memp_free
-    api_lib.o(.text) refers to sys.o(.text) for sys_sem_wait
     api_lib.o(.ARM.exidx) refers to api_lib.o(.text) for [Anonymous Symbol]
     api_msg.o(.text) refers to sys_arch.o(.text) for sys_sem_signal
     api_msg.o(.text) refers to raw.o(.text) for raw_new
@@ -679,27 +670,12 @@ Section Cross References
     api_msg.o(.text) refers to pbuf.o(.text) for pbuf_free
     api_msg.o(.text) refers to api_lib.o(.text) for netconn_delete
     api_msg.o(.text) refers to tcp_out.o(.text) for tcp_write
-    api_msg.o(.text) refers to dns.o(.text) for dns_gethostbyname
-    api_msg.o(.text) refers to strcmp.o(.text) for strcmp
     api_msg.o(.ARM.exidx) refers to api_msg.o(.text) for [Anonymous Symbol]
     netbuf.o(.text) refers to memp.o(.text) for memp_malloc
     netbuf.o(.text) refers to pbuf.o(.text) for pbuf_free
     netbuf.o(.text) refers to netbuf.o(.rodata.str1.1) for .L.str
     netbuf.o(.text) refers to printfa.o(i.__0printf) for __2printf
     netbuf.o(.ARM.exidx) refers to netbuf.o(.text) for [Anonymous Symbol]
-    netdb.o(.text) refers to api_lib.o(.text) for netconn_gethostbyname
-    netdb.o(.text) refers to netdb.o(.bss.h_errno) for h_errno
-    netdb.o(.text) refers to netdb.o(.bss.lwip_gethostbyname.s_hostent_addr) for lwip_gethostbyname.s_hostent_addr
-    netdb.o(.text) refers to netdb.o(.bss.lwip_gethostbyname.s_phostent_addr) for lwip_gethostbyname.s_phostent_addr
-    netdb.o(.text) refers to netdb.o(.bss.lwip_gethostbyname.s_hostent) for lwip_gethostbyname.s_hostent
-    netdb.o(.text) refers to netdb.o(.bss.lwip_gethostbyname.s_aliases) for lwip_gethostbyname.s_aliases
-    netdb.o(.text) refers to strlen.o(.text) for strlen
-    netdb.o(.text) refers to memcpya.o(.text) for __aeabi_memcpy
-    netdb.o(.text) refers to mem.o(.text) for mem_free
-    netdb.o(.text) refers to atoi.o(.text) for atoi
-    netdb.o(.text) refers to inet.o(.text) for htons
-    netdb.o(.text) refers to printfa.o(i.__0printf) for __2printf
-    netdb.o(.ARM.exidx) refers to netdb.o(.text) for [Anonymous Symbol]
     sockets.o(.text) refers to sys_arch.o(.text) for sys_sem_new
     sockets.o(.text) refers to sockets.o(.bss.socksem) for socksem
     sockets.o(.text) refers to sockets.o(.bss.selectsem) for selectsem
@@ -710,7 +686,7 @@ Section Cross References
     sockets.o(.text) refers to printfa.o(i.__0printf) for __2printf
     sockets.o(.text) refers to inet.o(.text) for htons
     sockets.o(.text) refers to memcpya.o(.text) for __aeabi_memcpy
-    sockets.o(.text) refers to sys.o(.text) for sys_sem_wait
+    sockets.o(.text) refers to os_sem.o(.text) for OSSemPend
     sockets.o(.text) refers to sockets.o(.bss.select_cb_list) for select_cb_list
     sockets.o(.text) refers to netbuf.o(.text) for netbuf_delete
     sockets.o(.text) refers to pbuf.o(.text) for pbuf_copy_partial
@@ -727,41 +703,27 @@ Section Cross References
     tcpip.o(.text) refers to init.o(.text) for lwip_init
     tcpip.o(.text) refers to tcpip.o(.bss.tcpip_init_done) for tcpip_init_done
     tcpip.o(.text) refers to tcpip.o(.bss.tcpip_init_done_arg) for tcpip_init_done_arg
+    tcpip.o(.text) refers to tcpip.o(.bss.TcpIpThreadSTK) for TcpIpThreadSTK
+    tcpip.o(.text) refers to tcpip.o(.bss.TcpIpThreadTCB) for TcpIpThreadTCB
+    tcpip.o(.text) refers to os_task.o(.text) for OSTaskCreate
     tcpip.o(.text) refers to ip.o(.text) for ip_input
     tcpip.o(.text) refers to etharp.o(.text) for ethernet_input
     tcpip.o(.text) refers to pbuf.o(.text) for pbuf_free
     tcpip.o(.text) refers to mem.o(.text) for mem_free
     tcpip.o(.text) refers to ip_frag.o(.text) for ip_reass_tmr
-    tcpip.o(.text) refers to dns.o(.text) for dns_tmr
     tcpip.o(.ARM.exidx) refers to tcpip.o(.text) for [Anonymous Symbol]
-    dns.o(.text) refers to inet.o(.text) for inet_addr
-    dns.o(.text) refers to dns.o(.bss.dns_pcb) for dns_pcb
-    dns.o(.text) refers to udp.o(.text) for udp_new
-    dns.o(.text) refers to ip_addr.o(.rodata.ip_addr_any) for ip_addr_any
-    dns.o(.text) refers to dns.o(.bss.dns_servers) for dns_servers
-    dns.o(.text) refers to dns.o(.bss.dns_payload) for dns_payload
-    dns.o(.text) refers to pbuf.o(.text) for pbuf_copy_partial
-    dns.o(.text) refers to dns.o(.bss.dns_table) for dns_table
-    dns.o(.text) refers to strlen.o(.text) for strlen
-    dns.o(.text) refers to strcmp.o(.text) for strcmp
-    dns.o(.text) refers to dns.o(.bss.dns_seqno) for dns_seqno
-    dns.o(.text) refers to strcpy.o(.text) for strcpy
-    dns.o(.text) refers to dns.o(.rodata.str1.1) for .L.str.1
-    dns.o(.text) refers to printfa.o(i.__0printf) for __2printf
-    dns.o(.ARM.exidx) refers to dns.o(.text) for [Anonymous Symbol]
     init.o(.text) refers to sys_arch.o(.text) for sys_init
     init.o(.text) refers to mem.o(.text) for mem_init
     init.o(.text) refers to memp.o(.text) for memp_init
     init.o(.text) refers to sockets.o(.text) for lwip_socket_init
-    init.o(.text) refers to dns.o(.text) for dns_init
     init.o(.ARM.exidx) refers to init.o(.text) for [Anonymous Symbol]
     mem.o(.text) refers to mem.o(.bss.ram_heap) for ram_heap
     mem.o(.text) refers to mem.o(.bss.ram) for ram
     mem.o(.text) refers to mem.o(.bss.ram_end) for ram_end
-    mem.o(.text) refers to sys_arch.o(.text) for sys_sem_new
-    mem.o(.text) refers to mem.o(.bss.mem_sem) for mem_sem
+    mem.o(.text) refers to mem.o(.bss.memSem) for memSem
+    mem.o(.text) refers to os_sem.o(.text) for OSSemCreate
     mem.o(.text) refers to mem.o(.bss.lfree) for lfree
-    mem.o(.text) refers to mem.o(.rodata.str1.1) for .L.str
+    mem.o(.text) refers to mem.o(.rodata.str1.1) for .L.str.1
     mem.o(.text) refers to printfa.o(i.__0printf) for __2printf
     mem.o(.text) refers to memseta.o(.text) for __aeabi_memclr
     mem.o(.ARM.exidx) refers to mem.o(.text) for [Anonymous Symbol]
@@ -795,6 +757,7 @@ Section Cross References
     sys.o(.text) refers to memp.o(.text) for memp_free
     sys.o(.text) refers to sys.o(.rodata.str1.1) for .L.str
     sys.o(.text) refers to printfa.o(i.__0printf) for __2printf
+    sys.o(.text) refers to os_sem.o(.text) for OSSemPend
     sys.o(.ARM.exidx) refers to sys.o(.text) for [Anonymous Symbol]
     tcp.o(.text) refers to tcp.o(.bss.tcp_active_pcbs) for tcp_active_pcbs
     tcp.o(.text) refers to pbuf.o(.text) for pbuf_free
@@ -1181,8 +1144,6 @@ Section Cross References
     printfa.o(i._printf_pre_padding) refers (Special) to iusefp.o(.text) for __I$use$fp
     printfa.o(i._snputc) refers (Special) to iusefp.o(.text) for __I$use$fp
     printfa.o(i._sputc) refers (Special) to iusefp.o(.text) for __I$use$fp
-    atoi.o(.text) refers to errno.o(i.__aeabi_errno_addr) for __aeabi_errno_addr
-    atoi.o(.text) refers to strtol.o(.text) for strtol
     fadd.o(.text) refers (Special) to iusefp.o(.text) for __I$use$fp
     fadd.o(.text) refers to fepilogue.o(.text) for _float_epilogue
     fdiv.o(.text) refers (Special) to iusefp.o(.text) for __I$use$fp
@@ -1232,12 +1193,6 @@ Section Cross References
     fputc_h.o(i._fputc$hlt) refers (Special) to semi.o(.text) for __semihosting_library_function
     uldiv.o(.text) refers to llushr.o(.text) for __aeabi_llsr
     uldiv.o(.text) refers to llshl.o(.text) for __aeabi_llsl
-    errno.o(i.__aeabi_errno_addr) refers to errno.o(.data) for .data
-    errno.o(i.__read_errno) refers to errno.o(.data) for .data
-    errno.o(i.__set_errno) refers to errno.o(.data) for .data
-    strtol.o(.text) refers to ctype_o.o(.text) for __rt_ctype_table
-    strtol.o(.text) refers to _strtoul.o(.text) for _strtoul
-    strtol.o(.text) refers to errno.o(i.__aeabi_errno_addr) for __aeabi_errno_addr
     fepilogue.o(.text) refers (Special) to iusefp.o(.text) for __I$use$fp
     depilogue.o(.text) refers (Special) to iusefp.o(.text) for __I$use$fp
     depilogue.o(.text) refers to llshl.o(.text) for __aeabi_llsl
@@ -1247,15 +1202,13 @@ Section Cross References
     dfixul.o(.text) refers to llshl.o(.text) for __aeabi_llsl
     cdrcmple.o(.text) refers (Special) to iusefp.o(.text) for __I$use$fp
     init.o(.text) refers to entry5.o(.ARM.Collect$$$$00000004) for __main_after_scatterload
-    _strtoul.o(.text) refers to _chval.o(.text) for _chval
-    _strtoul.o(.text) refers to errno.o(i.__aeabi_errno_addr) for __aeabi_errno_addr
 
 
 ==============================================================================
 
 Removing Unused input sections from the image.
 
-    Removing app.o(.ARM.exidx), (40 bytes).
+    Removing app.o(.ARM.exidx), (24 bytes).
     Removing app.o(.ARM.use_no_argv), (4 bytes).
     Removing os_app_hooks.o(.text), (282 bytes).
     Removing os_app_hooks.o(.ARM.exidx), (80 bytes).
@@ -1272,7 +1225,7 @@ Removing Unused input sections from the image.
     Removing sample_ttcp.o(.text), (954 bytes).
     Removing sample_ttcp.o(.ARM.exidx), (48 bytes).
     Removing sample_ttcp.o(.rodata.str1.1), (46 bytes).
-    Removing tcpclient.o(.text), (332 bytes).
+    Removing tcpclient.o(.text), (312 bytes).
     Removing tcpclient.o(.ARM.exidx), (8 bytes).
     Removing tcpclient.o(.rodata.send_data), (34 bytes).
     Removing tcpecho.o(.text), (272 bytes).
@@ -1294,7 +1247,7 @@ Removing Unused input sections from the image.
     Removing tcpserver2.o(.bss.TcpServerStack), (1200 bytes).
     Removing tcpserver2.o(.rodata.str1.1), (334 bytes).
     Removing tcpserver2.o(.rodata.send_data), (34 bytes).
-    Removing udpclient.o(.text), (168 bytes).
+    Removing udpclient.o(.text), (148 bytes).
     Removing udpclient.o(.ARM.exidx), (8 bytes).
     Removing udpclient.o(.rodata.send_data), (36 bytes).
     Removing udpecho.o(.text), (252 bytes).
@@ -1475,22 +1428,16 @@ Removing Unused input sections from the image.
     Removing ethernetif.o(.data.DMATxDesc), (4 bytes).
     Removing ethernetif.o(.bss.tcp_end_time), (4 bytes).
     Removing ethernetif.o(.bss.arp_end_time), (4 bytes).
-    Removing api_lib.o(.ARM.exidx), (112 bytes).
-    Removing api_msg.o(.ARM.exidx), (200 bytes).
+    Removing api_lib.o(.ARM.exidx), (104 bytes).
+    Removing api_msg.o(.ARM.exidx), (184 bytes).
     Removing err.o(.text), (0 bytes).
     Removing netbuf.o(.ARM.exidx), (72 bytes).
-    Removing netdb.o(.text), (692 bytes).
-    Removing netdb.o(.ARM.exidx), (32 bytes).
-    Removing netdb.o(.bss.lwip_gethostbyname.s_hostent), (20 bytes).
-    Removing netdb.o(.bss.lwip_gethostbyname.s_aliases), (4 bytes).
-    Removing netdb.o(.bss.lwip_gethostbyname.s_hostent_addr), (4 bytes).
-    Removing netdb.o(.bss.lwip_gethostbyname.s_phostent_addr), (4 bytes).
-    Removing netdb.o(.bss.h_errno), (4 bytes).
+    Removing netdb.o(.text), (0 bytes).
     Removing netifapi.o(.text), (0 bytes).
     Removing sockets.o(.ARM.exidx), (184 bytes).
-    Removing tcpip.o(.ARM.exidx), (120 bytes).
+    Removing tcpip.o(.ARM.exidx), (112 bytes).
     Removing dhcp.o(.text), (0 bytes).
-    Removing dns.o(.ARM.exidx), (72 bytes).
+    Removing dns.o(.text), (0 bytes).
     Removing init.o(.ARM.exidx), (8 bytes).
     Removing mem.o(.ARM.exidx), (40 bytes).
     Removing memp.o(.ARM.exidx), (24 bytes).
@@ -1553,4 +1500,4 @@ Removing Unused input sections from the image.
     Removing d2f.o(.text), (56 bytes).
     Removing fepilogue.o(.text), (110 bytes).
 
-297 unused section(s) (total 52351 bytes) removed from the image.
+291 unused section(s) (total 51431 bytes) removed from the image.

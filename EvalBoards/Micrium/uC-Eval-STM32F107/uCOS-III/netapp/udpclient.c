@@ -42,11 +42,11 @@ void udpclient(const char* url, int port, int count)
 {
     OS_ERR err3;
    int sock;
-   struct hostent *host;
+//    struct hostent *host;
    struct sockaddr_in server_addr;
 
    /* ͨ��������ڲ���url���host��ַ��������������������������� */
-   host= (struct hostent *) gethostbyname(url);
+//    host= (struct hostent *) gethostbyname(url);
 
    /* ����һ��socket��������SOCK_DGRAM��UDP���� */
    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -58,7 +58,7 @@ void udpclient(const char* url, int port, int count)
    /* ��ʼ��Ԥ���ӵķ���˵�ַ */
    server_addr.sin_family = AF_INET;
    server_addr.sin_port = htons(port);
-   server_addr.sin_addr = *((struct in_addr *)host->h_addr);
+//    server_addr.sin_addr = *((struct in_addr *)host->h_addr);
    memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
 
    /* �ܼƷ���count������ */

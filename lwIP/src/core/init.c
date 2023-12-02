@@ -232,12 +232,13 @@ lwip_init(void)
   lwip_sanity_check();
 
   /* Modules initialization */
-  stats_init();
+  // stats_init();
   sys_init();
   mem_init();
   memp_init();
-  pbuf_init();
-  netif_init();
+  
+  // pbuf_init();
+  // netif_init();
 #if LWIP_SOCKET
   lwip_socket_init();
 #endif /* LWIP_SOCKET */

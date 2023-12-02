@@ -52,7 +52,7 @@
 struct sswt_cb
 {
   s16_t timeflag;
-  sys_sem_t *psem;
+  OS_SEM *psem;
 };
 
 /**
@@ -123,7 +123,7 @@ sys_mbox_fetch(sys_mbox_t mbox, void **msg)
  * @param sem semaphore to wait for
  */
 void
-sys_sem_wait(sys_sem_t sem)
+sys_sem_wait(OS_SEM* sem)
 {
   u32_t time_needed;
   struct sys_timeouts *timeouts;
@@ -290,7 +290,7 @@ sswt_handler(void *arg)
 
   /* Timeout. Set flag to TRUE and signal semaphore */
   sswt_cb->timeflag = 1;
-  sys_sem_signal(*(sswt_cb->psem));
+  sys_sem_signal(sswt_cb->psem);
 }
 
 /**
@@ -301,11 +301,12 @@ sswt_handler(void *arg)
  * @return 0 on timeout, 1 otherwise
  */
 int
-sys_sem_wait_timeout(sys_sem_t sem, u32_t timeout)
+sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout)
 {
   struct sswt_cb sswt_cb;
+  OS_ERR err3;
 
-  sswt_cb.psem = &sem;
+  sswt_cb.psem = sem;
   sswt_cb.timeflag = 0;
 
   /* If timeout is zero, then just wait forever */
@@ -313,7 +314,8 @@ sys_sem_wait_timeout(sys_sem_t sem, u32_t timeout)
     /* Create a timer and pass it the address of our flag */
     sys_timeout(timeout, sswt_handler, &sswt_cb);
   }
-  sys_sem_wait(sem);
+  // sys_sem_wait(sem);
+  OSSemPend(sem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   /* Was it a timeout? */
   if (sswt_cb.timeflag) {
     /* timeout */
@@ -333,11 +335,14 @@ sys_sem_wait_timeout(sys_sem_t sem, u32_t timeout)
 void
 sys_msleep(u32_t ms)
 {
-  sys_sem_t delaysem = sys_sem_new(0);
+  OS_ERR err3;
+  OS_SEM* delaysem = sys_sem_new(0);
 
-  sys_sem_wait_timeout(delaysem, ms);
+  // sys_sem_wait_timeout(delaysem, ms);
+  OSSemPend(delaysem, ms, OS_OPT_PEND_BLOCKING, NULL, &err3);
 
-  sys_sem_free(delaysem);
+  // sys_sem_free(delaysem);
+  OSSemDel(delaysem, OS_OPT_DEL_ALWAYS, &err3);
 }
 
 

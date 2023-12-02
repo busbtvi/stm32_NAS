@@ -181,7 +181,8 @@ static struct mem *ram_end;
 static struct mem *lfree;
 
 /** concurrent access protection */
-static sys_sem_t mem_sem;
+// static sys_sem_t mem_sem;
+static OS_SEM memSem;
 
 #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
 
@@ -199,8 +200,8 @@ static volatile u8_t mem_free_count;
 
 /* Protect the heap only by using a semaphore */
 #define LWIP_MEM_FREE_DECL_PROTECT()
-#define LWIP_MEM_FREE_PROTECT()    sys_arch_sem_wait(mem_sem, 0)
-#define LWIP_MEM_FREE_UNPROTECT()  sys_sem_signal(mem_sem)
+// #define LWIP_MEM_FREE_PROTECT()    sys_arch_sem_wait(mem_sem, 0)
+// #define LWIP_MEM_FREE_UNPROTECT()  sys_sem_signal(mem_sem)
 /* mem_malloc is protected using semaphore AND LWIP_MEM_ALLOC_PROTECT */
 #define LWIP_MEM_ALLOC_DECL_PROTECT()
 #define LWIP_MEM_ALLOC_PROTECT()
@@ -262,6 +263,7 @@ void
 mem_init(void)
 {
   struct mem *mem;
+  OS_ERR err3;
 
   LWIP_ASSERT("Sanity check alignment",
     (SIZEOF_STRUCT_MEM & (MEM_ALIGNMENT-1)) == 0);
@@ -279,7 +281,8 @@ mem_init(void)
   ram_end->next = MEM_SIZE_ALIGNED;
   ram_end->prev = MEM_SIZE_ALIGNED;
 
-  mem_sem = sys_sem_new(1);
+  // mem_sem = sys_sem_new(1);
+  OSSemCreate(&memSem, "memSem", 1, &err3);
 
   /* initialize the lowest-free pointer to the start of the heap */
   lfree = (struct mem *)ram;
@@ -297,6 +300,7 @@ void
 mem_free(void *rmem)
 {
   struct mem *mem;
+  OS_ERR err3;
   LWIP_MEM_FREE_DECL_PROTECT();
 
   if (rmem == NULL) {
@@ -318,7 +322,8 @@ mem_free(void *rmem)
     return;
   }
   /* protect the heap from concurrent access */
-  LWIP_MEM_FREE_PROTECT();
+  // LWIP_MEM_FREE_PROTECT();
+  OSSemPend(&memSem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   /* Get the corresponding struct mem ... */
   mem = (struct mem *)((u8_t *)rmem - SIZEOF_STRUCT_MEM);
   /* ... which has to be in a used state ... */
@@ -338,7 +343,8 @@ mem_free(void *rmem)
 #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
   mem_free_count = 1;
 #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
-  LWIP_MEM_FREE_UNPROTECT();
+  // LWIP_MEM_FREE_UNPROTECT();
+  OSSemPost(&memSem, OS_OPT_POST_1, &err3);
 }
 
 /**
@@ -359,6 +365,7 @@ mem_realloc(void *rmem, mem_size_t newsize)
   mem_size_t size;
   mem_size_t ptr, ptr2;
   struct mem *mem, *mem2;
+  OS_ERR err3;
   /* use the FREE_PROTECT here: it protects with sem OR SYS_ARCH_PROTECT */
   LWIP_MEM_FREE_DECL_PROTECT();
 
@@ -404,7 +411,8 @@ mem_realloc(void *rmem, mem_size_t newsize)
   }
 
   /* protect the heap from concurrent access */
-  LWIP_MEM_FREE_PROTECT();
+  // LWIP_MEM_FREE_PROTECT();
+  OSSemPend(&memSem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
 
   MEM_STATS_DEC_USED(used, (size - newsize));
 
@@ -465,7 +473,8 @@ mem_realloc(void *rmem, mem_size_t newsize)
 #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
   mem_free_count = 1;
 #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
-  LWIP_MEM_FREE_UNPROTECT();
+  // LWIP_MEM_FREE_UNPROTECT();
+  OSSemPost(&memSem, OS_OPT_POST_1, &err3);
   return rmem;
 }
 
@@ -483,6 +492,8 @@ mem_malloc(mem_size_t size)
 {
   mem_size_t ptr, ptr2;
   struct mem *mem, *mem2;
+  OS_ERR err3;
+
 #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
   u8_t local_mem_free_count = 0;
 #endif /* LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT */
@@ -506,7 +517,8 @@ mem_malloc(mem_size_t size)
   }
 
   /* protect the heap from concurrent access */
-  sys_arch_sem_wait(mem_sem, 0);
+  // sys_arch_sem_wait(mem_sem, 0);
+  OSSemPend(&memSem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
   LWIP_MEM_ALLOC_PROTECT();
 #if LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT
   /* run as long as a mem_free disturbed mem_malloc */
@@ -584,7 +596,8 @@ mem_malloc(mem_size_t size)
           LWIP_ASSERT("mem_malloc: !lfree->used", ((lfree == ram_end) || (!lfree->used)));
         }
         LWIP_MEM_ALLOC_UNPROTECT();
-        sys_sem_signal(mem_sem);
+        // sys_sem_signal(mem_sem);
+        OSSemPost(&memSem, OS_OPT_POST_1, &err3); 
         LWIP_ASSERT("mem_malloc: allocated memory not above ram_end.",
          (mem_ptr_t)mem + SIZEOF_STRUCT_MEM + size <= (mem_ptr_t)ram_end);
         LWIP_ASSERT("mem_malloc: allocated memory properly aligned.",
@@ -602,7 +615,8 @@ mem_malloc(mem_size_t size)
   LWIP_DEBUGF(MEM_DEBUG | 2, ("mem_malloc: could not allocate %"S16_F" bytes\n", (s16_t)size));
   MEM_STATS_INC(err);
   LWIP_MEM_ALLOC_UNPROTECT();
-  sys_sem_signal(mem_sem);
+  // sys_sem_signal(mem_sem);
+  OSSemPost(&memSem, OS_OPT_POST_1, &err3);
   return NULL;
 }
 

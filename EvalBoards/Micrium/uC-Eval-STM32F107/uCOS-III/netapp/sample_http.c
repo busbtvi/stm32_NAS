@@ -150,7 +150,7 @@ http_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 			//-----------------------------------------------------------------
 			//counter
 			counter ++;
-			sprintf(&demo[459],"%.6d",counter);
+			sprintf(&demo[459],"%.6d", (int)counter);
 			demo[465] = 0x20;
 			//runtime
 			runtime = OSTimeGet((OS_ERR *)&err3) / 100;

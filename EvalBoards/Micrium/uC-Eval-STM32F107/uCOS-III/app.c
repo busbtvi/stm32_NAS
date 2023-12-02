@@ -57,16 +57,16 @@
 */
 
 static  OS_TCB   AppTaskStartTCB;
-static  OS_TCB   AppTaskFirstTCB;
 
+static  OS_TCB   AppTaskFirstTCB;
 static int taskFirstCount;
 
 
-static  OS_TCB   AppTaskSecondTCB;
-static int taskSecondCount;
+// static  OS_TCB   AppTaskSecondTCB;
+// static int taskSecondCount;
 
-static  OS_TCB   AppTaskThirdTCB;
-static int taskThirdCount;
+// static  OS_TCB   AppTaskThirdTCB;
+// static int taskThirdCount;
 
 /*
 *********************************************************************************************************
@@ -77,8 +77,8 @@ static int taskThirdCount;
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
 static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
 
-static  CPU_STK  AppTaskSecondStk[APP_TASK_FIRST_STK_SIZE];
-static  CPU_STK  AppTaskThirdStk[APP_TASK_FIRST_STK_SIZE];
+// static  CPU_STK  AppTaskSecondStk[APP_TASK_FIRST_STK_SIZE];
+// static  CPU_STK  AppTaskThirdStk[APP_TASK_FIRST_STK_SIZE];
 
 /*
 *********************************************************************************************************
@@ -91,8 +91,8 @@ static  void  AppObjCreate  (void);
 static  void  AppTaskStart  (void *p_arg);
 
 static  void  AppTaskFirst  (void *p_arg);
-static  void  AppTaskSecond (void *p_arg);
-static  void  AppTaskThird  (void *p_arg);
+// static  void  AppTaskSecond (void *p_arg);
+// static  void  AppTaskThird  (void *p_arg);
 
 
 /*
@@ -116,9 +116,9 @@ int  main (void){
 
     OSInit(&err);                                               /* Init uC/OS-III.                                      */
 	
-    OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
-                         (OS_TICK    )10000,
-                         (OS_ERR    *)&err);
+    // OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
+    //                      (OS_TICK    )10000,
+    //                      (OS_ERR    *)&err);
 
     OSTaskCreate((OS_TCB     *)&AppTaskStartTCB,                /* Create the start task                                */
                  (CPU_CHAR   *)"App Task Start",
@@ -178,9 +178,9 @@ static  void  AppTaskStart (void *p_arg){
 
     CPU_IntDisMeasMaxCurReset();
 
-#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
-    BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
-#endif
+// #if (APP_CFG_SERIAL_EN == DEF_ENABLED)
+//     BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
+// #endif
     
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
@@ -228,32 +228,32 @@ static  void  AppTaskCreate (void)
 							 (void       *)0,
 							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 							 (OS_ERR     *)&err);
-	OSTaskCreate((OS_TCB     *)&AppTaskSecondTCB, 
-							 (CPU_CHAR   *)"App Second Start",
-							 (OS_TASK_PTR )AppTaskSecond,
-							 (void       *)0,
-							 (OS_PRIO     )APP_TASK_FIRST_PRIO,
-							 (CPU_STK    *)&AppTaskSecondStk[0],
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_SECOND_RR_TIME_QUANTA,
-							 (void       *)0,
-							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-							 (OS_ERR     *)&err);
-	OSTaskCreate((OS_TCB     *)&AppTaskThirdTCB, 
-							 (CPU_CHAR   *)"App Third Start",
-							 (OS_TASK_PTR )AppTaskThird,
-							 (void       *)0,
-							 (OS_PRIO     )APP_TASK_FIRST_PRIO,
-							 (CPU_STK    *)&AppTaskThirdStk[0],
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_THIRD_RR_TIME_QUANTA,
-							 (void       *)0,
-							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-							 (OS_ERR     *)&err);
+	// OSTaskCreate((OS_TCB     *)&AppTaskSecondTCB, 
+	// 						 (CPU_CHAR   *)"App Second Start",
+	// 						 (OS_TASK_PTR )AppTaskSecond,
+	// 						 (void       *)0,
+	// 						 (OS_PRIO     )APP_TASK_FIRST_PRIO,
+	// 						 (CPU_STK    *)&AppTaskSecondStk[0],
+	// 						 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
+	// 						 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
+	// 						 (OS_MSG_QTY  )0,
+	// 						 (OS_TICK     )TASK_SECOND_RR_TIME_QUANTA,
+	// 						 (void       *)0,
+	// 						 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+	// 						 (OS_ERR     *)&err);
+	// OSTaskCreate((OS_TCB     *)&AppTaskThirdTCB, 
+	// 						 (CPU_CHAR   *)"App Third Start",
+	// 						 (OS_TASK_PTR )AppTaskThird,
+	// 						 (void       *)0,
+	// 						 (OS_PRIO     )APP_TASK_FIRST_PRIO,
+	// 						 (CPU_STK    *)&AppTaskThirdStk[0],
+	// 						 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
+	// 						 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
+	// 						 (OS_MSG_QTY  )0,
+	// 						 (OS_TICK     )TASK_THIRD_RR_TIME_QUANTA,
+	// 						 (void       *)0,
+	// 						 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+	// 						 (OS_ERR     *)&err);
 }
 
 
@@ -289,33 +289,33 @@ static void AppTaskFirst (void *p_arg) {
 		taskFirstCount++;
 		if (taskFirstCount % TASK_COUNT_PERIOD == 0) {
 			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '*');
+			// USART_SendData(USART2, '*');
 		}
 	}
 }
-static void AppTaskSecond (void *p_arg) {
-	OS_ERR      err;
+// static void AppTaskSecond (void *p_arg) {
+// 	OS_ERR      err;
 	
-	taskSecondCount = 0;
+// 	taskSecondCount = 0;
 
-	while (DEF_TRUE) {
-		taskSecondCount++;
-		if (taskSecondCount % TASK_COUNT_PERIOD == 0) {
-			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '@');
-		}
-	}
-}
-static void AppTaskThird (void *p_arg) {
-	OS_ERR      err;
+// 	while (DEF_TRUE) {
+// 		taskSecondCount++;
+// 		if (taskSecondCount % TASK_COUNT_PERIOD == 0) {
+// 			BSP_LED_Toggle(1);
+// 			USART_SendData(USART2, '@');
+// 		}
+// 	}
+// }
+// static void AppTaskThird (void *p_arg) {
+// 	OS_ERR      err;
 	
-	taskThirdCount = 0;
+// 	taskThirdCount = 0;
 
-	while (DEF_TRUE) {
-		taskThirdCount++;
-		if (taskThirdCount % TASK_COUNT_PERIOD == 0) {
-			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '#');
-		}
-	}
-}
+// 	while (DEF_TRUE) {
+// 		taskThirdCount++;
+// 		if (taskThirdCount % TASK_COUNT_PERIOD == 0) {
+// 			BSP_LED_Toggle(1);
+// 			USART_SendData(USART2, '#');
+// 		}
+// 	}
+// }

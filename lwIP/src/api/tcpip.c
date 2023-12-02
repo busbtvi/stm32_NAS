@@ -67,6 +67,8 @@ sys_sem_t lock_tcpip_core;
 #if LWIP_TCP
 /* global variable that shows if the tcp timer is currently scheduled or not */
 static int tcpip_tcp_timer_active;
+static  OS_TCB   TcpIpThreadTCB;
+static  CPU_STK  TcpIpThreadSTK[TCPIP_THREAD_STACKSIZE];
 
 /**
  * Timer callback function that calls tcp_tmr() and reschedules itself.
@@ -543,6 +545,7 @@ tcpip_netifapi_lock(struct netifapi_msg* netifapimsg)
 void
 tcpip_init(void (* initfunc)(void *), void *arg)
 {
+  OS_ERR err3;
   lwip_init();
 
   tcpip_init_done = initfunc;
@@ -552,7 +555,20 @@ tcpip_init(void (* initfunc)(void *), void *arg)
   lock_tcpip_core = sys_sem_new(1);
 #endif /* LWIP_TCPIP_CORE_LOCKING */
 
-  sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
+  // sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
+  OSTaskCreate((OS_TCB     *)&TcpIpThreadTCB,
+              (CPU_CHAR   *) TCPIP_THREAD_NAME,
+              (OS_TASK_PTR ) tcpip_thread,
+              (void       *) NULL,
+              (OS_PRIO     ) LWIP_START_PRIO + TCPIP_THREAD_PRIO - 1,
+              (CPU_STK    *) &TcpIpThreadSTK,
+              (CPU_STK_SIZE) TCPIP_THREAD_STACKSIZE / 10,
+              (CPU_STK_SIZE) TCPIP_THREAD_STACKSIZE,
+              (OS_MSG_QTY  ) 0,
+              (OS_TICK     ) 0,
+              (void       *) 0,
+              (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+              (OS_ERR     *)&err3);
 }
 
 /**

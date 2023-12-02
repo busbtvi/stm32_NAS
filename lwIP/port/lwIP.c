@@ -31,6 +31,8 @@
 // #include "stm3210c_eval_lcd.h"
 #include "stm32_eth.h"
 
+static OS_SEM InitLwipSem;
+
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define MAX_DHCP_TRIES        4
@@ -52,9 +54,9 @@ static void list_if(void);
  */
 static void TcpipInitDone(void *arg)
 {
-    sys_sem_t *sem;
-    sem = arg;
-    sys_sem_signal(*sem);
+    // sys_sem_t *sem;
+    // sem = arg;
+    sys_sem_signal((OS_SEM*)arg);
 }
 
 /**
@@ -66,8 +68,10 @@ void Init_lwIP(void)
     struct ip_addr netmask;
     struct ip_addr gw;
     uint8_t macaddress[6]={0,0,0,0,0,1};
+
+    OS_ERR err3;
     
-    sys_sem_t sem;
+    // sys_sem_t sem;
     
     sys_init();
     
@@ -77,14 +81,17 @@ void Init_lwIP(void)
     /* Initializes the memory pools defined by MEMP_NUM_x.*/
     memp_init();
     
-    pbuf_init();	
-    netif_init();
+    // pbuf_init();	
+    // netif_init();
     
     printf("TCP/IP initializing...\n");
-    sem = sys_sem_new(0);
-    tcpip_init(TcpipInitDone, &sem);
-    sys_sem_wait(sem);
-    sys_sem_free(sem);
+    // sem = sys_sem_new(0);
+    OSSemCreate(&InitLwipSem, "Init Lwip Sem", 0, &err3);
+    tcpip_init(TcpipInitDone, &InitLwipSem);
+    // sys_sem_wait(sem);
+    OSSemPend(&InitLwipSem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
+    // sys_sem_free(sem);
+    OSSemDel(&InitLwipSem, OS_OPT_DEL_ALWAYS, &err3);
     printf("TCP/IP initialized.\n");
     
     // rx_sem = sys_sem_new(0);                // create receive semaphore

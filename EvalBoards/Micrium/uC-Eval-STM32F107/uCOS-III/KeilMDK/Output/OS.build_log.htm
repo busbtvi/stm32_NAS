@@ -28,18 +28,15 @@ Project File Date:  11/28/2023
 *** Using Compiler 'V6.19', folder: 'D:\Program Files\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'FLASH'
 Note: source file '..\..\..\..\..\lwIP\src\netif\ethernetif.c' - object file renamed from '.\Output\ethernetif.o' to '.\Output\ethernetif_1.o'.
-compiling udpserver.c...
+compiling app.c...
 linking...
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching ethernetif.o(.bss.Tx_Buff).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_MsgPool).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching ip_frag.o(.bss.buf).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching dns.o(.bss.dns_table).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching sys_arch.o(.bss.TcpServerTCB).
+.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.TcpIpThreadSTK).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching sys_arch.o(.bss.pcQueueMemoryPool).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskStartStk).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskFirstStk).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskSecondStk).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskThirdStk).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching cstartup.o(STACK).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_IdleTaskStk).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_IntQTaskStk).
@@ -47,19 +44,18 @@ linking...
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_StatTaskStk).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_TickTaskStk).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_TmrTaskStk).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching dns.o(.bss.dns_payload).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSRdyList).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_IntQ).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching bsp_int.o(.bss.BSP_IntVectTbl).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskStartTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskFirstTCB).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskSecondTCB).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.AppTaskThirdTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSIdleTaskTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSIntQTaskTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSStatTaskTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSTickTaskTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSTmrTaskTCB).
+.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching sys_arch.o(.bss.TcpServerTCB).
+.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.TcpIpThreadTCB).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching etharp.o(.bss.arp_table).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_TickWheel).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_cfg_app.o(.bss.OSCfg_TmrWheel).
@@ -71,16 +67,15 @@ linking...
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching bsp_ser.o(.bss.BSP_SerTxWait).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching bsp_ser.o(.bss.BSP_SerRxWait).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching bsp_ser.o(.bss.BSP_SerLock).
+.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching lwip.o(.bss.InitLwipSem).
+.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching mem.o(.bss.memSem).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching ethernetif.o(.bss.DMATxDscrTab).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching cpu_core.o(.bss.CPU_Name).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching inet.o(.bss.inet_ntoa.str).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSMsgPool).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching sys_arch.o(.bss.lwip_timeouts).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching dns.o(.bss.dns_servers).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching ethernetif.o(.bss.MACaddr).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.taskFirstCount).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.taskSecondCount).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching app.o(.bss.taskThirdCount).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching bsp.o(.bss.BSP_CPU_ClkFreq_MHz).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching cpu_core.o(.bss.CPU_TS_TmrFreq_Hz).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching cpu_core.o(.bss.CPU_IntDisMeasMaxCur_cnts).
@@ -136,10 +131,8 @@ linking...
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.mbox).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.tcpip_init_done).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.tcpip_init_done_arg).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching dns.o(.bss.dns_pcb).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching mem.o(.bss.ram).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching mem.o(.bss.ram_end).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching mem.o(.bss.mem_sem).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching mem.o(.bss.lfree).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching netif.o(.bss.netif_list).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching netif.o(.bss.netif_default).
@@ -196,19 +189,18 @@ linking...
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSStatTaskRdy).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching os_var.o(.bss.OSTaskRegNextAvailID).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcpip.o(.bss.tcpip_tcp_timer_active).
-.\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching dns.o(.bss.dns_seqno).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching netif.o(.bss.netif_add.netifnum).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcp.o(.bss.tcp_timer).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcp_in.o(.bss.flags).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching tcp_in.o(.bss.recv_flags).
 .\Output\OS.axf: Error: L6406E: No space in execution regions with .ANY selector matching etharp.o(.bss.etharp_cached_entry).
-.\Output\OS.axf: Error: L6407E: Sections of aggregate size 0x4c54 bytes could not fit into .ANY selector(s).
+.\Output\OS.axf: Error: L6407E: Sections of aggregate size 0x42f0 bytes could not fit into .ANY selector(s).
 Not enough information to list image symbols.
 Not enough information to list load addresses in the image map.
-Finished: 2 information, 0 warning and 173 error messages.
-".\Output\OS.axf" - 173 Error(s), 0 Warning(s).
+Finished: 2 information, 0 warning and 165 error messages.
+".\Output\OS.axf" - 165 Error(s), 0 Warning(s).
 Target not created.
-Build Time Elapsed:  00:00:03
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>

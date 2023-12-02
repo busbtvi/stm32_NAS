@@ -49,7 +49,7 @@ const void * const pvNullPointer = (mem_ptr_t*)0xffffffff;
 static char pcQueueMemoryPool[MAX_QUEUES * sizeof(TQ_DESCR) + MEM_ALIGNMENT - 1];
 
 //SYS_ARCH_EXT OS_STK LWIP_TASK_STK[LWIP_TASK_MAX][LWIP_STK_SIZE];
-#define NewThreadMax  5
+#define NewThreadMax  1
 static  OS_TCB   TcpServerTCB[NewThreadMax];
 static  int      availableTcbIndex = 0;
 
@@ -66,14 +66,14 @@ sys_mbox_t
 sys_mbox_new(int size)
 {
     // prarmeter "size" can be ignored in your implementation.
-    u8_t       ucErr;
+    // u8_t       ucErr;
     PQ_DESCR    pQDesc;
     OS_ERR err3;
     
-    pQDesc = OSMemGet( pQueueMem, &ucErr );
-    LWIP_ASSERT("OSMemGet ", ucErr == OS_ERR_NONE );
+    pQDesc = OSMemGet( pQueueMem, &err3 );
+    LWIP_ASSERT("OSMemGet ", err3 == OS_ERR_NONE );
     
-    if( ucErr == OS_ERR_NONE ) 
+    if( err3 == OS_ERR_NONE ) 
     {
         if( size > MAX_QUEUE_ENTRIES ) // �����������MAX_QUEUE_ENTRIES��Ϣ��Ŀ
             size = MAX_QUEUE_ENTRIES;
@@ -106,7 +106,7 @@ sys_mbox_new(int size)
 void
 sys_mbox_free(sys_mbox_t mbox)
 {
-    u8_t     ucErr;
+    // u8_t     ucErr;
     OS_ERR err3;
     
     LWIP_ASSERT( "sys_mbox_free ", mbox != SYS_MBOX_NULL );      
@@ -115,8 +115,8 @@ sys_mbox_free(sys_mbox_t mbox)
     OSQFlush((OS_Q *)mbox->pQ->OSEventPtr, &err3);
     
     //del OSQ EVENT
-    (void)OSQDel( mbox->pQ, OS_OPT_DEL_NO_PEND, &ucErr);
-    LWIP_ASSERT( "OSQDel ", ucErr == OS_ERR_NONE );
+    (void)OSQDel((OS_Q *)mbox->pQ->OSEventPtr, OS_OPT_DEL_NO_PEND, &err3);
+    LWIP_ASSERT( "OSQDel ", err3 == OS_ERR_NONE );
     
     //put mem back to mem queue
     // ucErr = OSMemPut( pQueueMem, mbox );
@@ -238,7 +238,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
 /*-----------------------------------------------------------------------------------*/
 //  Creates and returns a new semaphore. The "count" argument specifies
 //  the initial state of the semaphore. TBD finish and test
-sys_sem_t
+OS_SEM*
 sys_sem_new(u8_t count)
 {
 	// sys_sem_t pSem;
@@ -252,6 +252,7 @@ sys_sem_new(u8_t count)
                 (OS_ERR     *) &err3);
     LWIP_ASSERT("OSSemCreate ", err3 == OS_ERR_NONE);
 
+    return &new_sem;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -271,7 +272,7 @@ sys_sem_new(u8_t count)
   sys_sem_wait(), that uses the sys_arch_sem_wait() function.
 */
 u32_t
-sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
+sys_arch_sem_wait(OS_SEM* sem, u32_t timeout)
 {
     OS_ERR err3;
     u8_t ucErr;
@@ -291,7 +292,7 @@ sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
     timeout = OSTimeGet((OS_ERR *)&err3); // ��¼��ʼʱ��
     
     // OSSemPend ((OS_EVENT *)sem,(u16_t)ucos_timeout, (u8_t *)&ucErr);
-    OSSemPend((OS_SEM   *) &sem,
+    OSSemPend((OS_SEM   *) sem,
             (OS_TICK     ) ucos_timeout,
             (OS_OPT      ) OS_OPT_PEND_BLOCKING,
             (CPU_TS     *) &timeout_new,
@@ -317,7 +318,7 @@ sys_arch_sem_wait(sys_sem_t sem, u32_t timeout)
 /*-----------------------------------------------------------------------------------*/
 // Signals a semaphore
 void
-sys_sem_signal(sys_sem_t sem)
+sys_sem_signal(OS_SEM* sem)
 {
     // u8_t ucErr;
     // ucErr = OSSemPost((OS_EVENT *)sem);
@@ -332,7 +333,7 @@ sys_sem_signal(sys_sem_t sem)
 /*-----------------------------------------------------------------------------------*/
 // Deallocates a semaphore
 void
-sys_sem_free(sys_sem_t sem)
+sys_sem_free(OS_SEM* sem)
 {
     // u8_t     ucErr;
     // (void)OSSemDel( (OS_EVENT *)sem, OS_DEL_ALWAYS, &ucErr );
