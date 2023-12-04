@@ -73,26 +73,23 @@ void Init_lwIP(void)
     
     // sys_sem_t sem;
     
-    sys_init();
+    // sys_init();
     
     /* Initializes the dynamic memory heap defined by MEM_SIZE.*/
-    mem_init();
+    // mem_init();
     
     /* Initializes the memory pools defined by MEMP_NUM_x.*/
-    memp_init();
+    // memp_init();
     
     // pbuf_init();	
     // netif_init();
     
-    printf("TCP/IP initializing...\n");
     // sem = sys_sem_new(0);
-    OSSemCreate(&InitLwipSem, "Init Lwip Sem", 0, &err3);
     tcpip_init(TcpipInitDone, &InitLwipSem);
     // sys_sem_wait(sem);
     OSSemPend(&InitLwipSem, 0, OS_OPT_PEND_BLOCKING, NULL, &err3);
     // sys_sem_free(sem);
     OSSemDel(&InitLwipSem, OS_OPT_DEL_ALWAYS, &err3);
-    printf("TCP/IP initialized.\n");
     
     // rx_sem = sys_sem_new(0);                // create receive semaphore
     // tx_sem = sys_sem_new(0);                // create transmit semaphore
@@ -117,7 +114,6 @@ void Init_lwIP(void)
     
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
     netif_set_default(&netif);
-    
 #if LWIP_DHCP
     dhcp_start(&netif);
 #endif
@@ -165,7 +161,7 @@ void Display_IPAddress(void)
 #if LWIP_DHCP
     else if(IPaddress == 0)
     {   // �ȴ�DHCP����IP
-        printf("Looking for DHCP server please wait ...\n")
+        printf("Looking for DHCP server please wait ...\n");
         
         /* If no response from a DHCP server for MAX_DHCP_TRIES times */
         /* stop the dhcp client and set a static IP address */

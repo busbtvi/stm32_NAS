@@ -124,10 +124,10 @@ struct netconn {
   OS_SEM* op_completed;
   /** mbox where received packets are stored until they are fetched
       by the netconn application thread (can grow quite big) */
-  sys_mbox_t recvmbox;
+  OS_Q recvmbox;
   /** mbox where new connections are stored until processed
       by the application thread */
-  sys_mbox_t acceptmbox;
+  OS_Q acceptmbox;
   /** only used for socket layer */
   int socket;
 #if LWIP_SO_RCVTIMEO
@@ -139,6 +139,8 @@ struct netconn {
   /** maximum amount of bytes queued in recvmbox */
   int recv_bufsize;
 #endif /* LWIP_SO_RCVBUF */
+  /** flags holding more netconn-internal state, see NETCONN_FLAG_* defines */
+  u8_t flags;
   s16_t recv_avail;
 #if LWIP_TCP
   /** TCP: when data passed to netconn_write doesn't fit into the send buffer,

@@ -42,11 +42,12 @@
 
 #include "include/arch/sys_arch.h"
 
-static OS_MEM *pQueueMem;
+static OS_MEM pQueueMem;
 
 const void * const pvNullPointer = (mem_ptr_t*)0xffffffff;
 
-static char pcQueueMemoryPool[MAX_QUEUES * sizeof(TQ_DESCR) + MEM_ALIGNMENT - 1];
+static char pcQueueMemoryPool[MAX_QUEUES][sizeof(TQ_DESCR) + sizeof(void*)];
+// static char pcQueueMemoryPool[MAX_QUEUES * sizeof(TQ_DESCR) + MEM_ALIGNMENT - 1];
 
 //SYS_ARCH_EXT OS_STK LWIP_TASK_STK[LWIP_TASK_MAX][LWIP_STK_SIZE];
 #define NewThreadMax  1
@@ -62,39 +63,46 @@ struct sys_timeouts null_timeouts;
 
 /*-----------------------------------------------------------------------------------*/
 //  Creates an empty mailbox.
-sys_mbox_t
-sys_mbox_new(int size)
-{
+int sys_mbox_new(OS_Q* mbox, int size){
+    OS_ERR       ucErr;
+      
+    OSQCreate(mbox,"LWIP quiue", size, &ucErr); 
+    LWIP_ASSERT( "OSQCreate ", ucErr == OS_ERR_NONE );
+    
+    if( ucErr == OS_ERR_NONE){ 
+        return 0; 
+    }
+    return -1;
     // prarmeter "size" can be ignored in your implementation.
     // u8_t       ucErr;
-    PQ_DESCR    pQDesc;
-    OS_ERR err3;
+    // PQ_DESCR    pQDesc;
+    // OS_ERR err3;
     
-    pQDesc = OSMemGet( pQueueMem, &err3 );
-    LWIP_ASSERT("OSMemGet ", err3 == OS_ERR_NONE );
+    // pQDesc = (PQ_DESCR) OSMemGet(&pQueueMem, &err3);
+    // LWIP_ASSERT("OSMemGet ", err3 == OS_ERR_NONE );
     
-    if( err3 == OS_ERR_NONE ) 
-    {
-        if( size > MAX_QUEUE_ENTRIES ) // �����������MAX_QUEUE_ENTRIES��Ϣ��Ŀ
-            size = MAX_QUEUE_ENTRIES;
+    // if( err3 == OS_ERR_NONE ) 
+    // {
+    //     if( size > MAX_QUEUE_ENTRIES ) // �����������MAX_QUEUE_ENTRIES��Ϣ��Ŀ
+    //         size = MAX_QUEUE_ENTRIES;
         
-        // pQDesc->pQ = OSQCreate( &(pQDesc->pvQEntries[0]), size ); 
-        OSQCreate ((OS_Q      *)  pQDesc->pvQEntries[0],
-                    (CPU_CHAR  *) "sys_mbox_new",
-                    (OS_MSG_QTY ) size,
-                    (OS_ERR    *) &err3);
-        LWIP_ASSERT( "OSQCreate ", pQDesc->pQ != NULL );
+    //     // pQDesc->pQ = OSQCreate( &(pQDesc->pvQEntries[0]), size ); 
+    //     OSQCreate ((OS_Q      *)  pQDesc->pvQEntries[0],
+    //                 (CPU_CHAR  *) "sys_mbox_new",
+    //                 (OS_MSG_QTY ) size,
+    //                 (OS_ERR    *) &err3);
+    //     LWIP_ASSERT( "OSQCreate ", pQDesc->pQ != NULL );
         
-        if( pQDesc->pQ != NULL ) 
-            return pQDesc; 
-        else
-        {
-            // ucErr = OSMemPut( pQueueMem, pQDesc );
-            OSMemPut(pQueueMem, pQDesc , &err3);
-            return SYS_MBOX_NULL;
-        }
-    }
-    else return SYS_MBOX_NULL;
+    //     if( pQDesc->pQ != NULL ) 
+    //         return pQDesc; 
+    //     else
+    //     {
+    //         // ucErr = OSMemPut( pQueueMem, pQDesc );
+    //         OSMemPut(&pQueueMem, pQDesc , &err3);
+    //         return SYS_MBOX_NULL;
+    //     }
+    // }
+    // else return SYS_MBOX_NULL;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -104,66 +112,47 @@ sys_mbox_new(int size)
   programming error in lwIP and the developer should be notified.
 */
 void
-sys_mbox_free(sys_mbox_t mbox)
+sys_mbox_free(OS_Q* mbox)
 {
-    // u8_t     ucErr;
-    OS_ERR err3;
-    
-    LWIP_ASSERT( "sys_mbox_free ", mbox != SYS_MBOX_NULL );      
+    OS_ERR     ucErr;
+    LWIP_ASSERT( "sys_mbox_free ", sys_mbox_valid(mbox) );      
         
-    //clear OSQ EVENT
-    OSQFlush((OS_Q *)mbox->pQ->OSEventPtr, &err3);
+    OSQFlush(mbox,& ucErr);
     
-    //del OSQ EVENT
-    (void)OSQDel((OS_Q *)mbox->pQ->OSEventPtr, OS_OPT_DEL_NO_PEND, &err3);
-    LWIP_ASSERT( "OSQDel ", err3 == OS_ERR_NONE );
-    
-    //put mem back to mem queue
-    // ucErr = OSMemPut( pQueueMem, mbox );
-    OSMemPut(pQueueMem, mbox , &err3);
-    LWIP_ASSERT( "OSMemPut ", err3 == OS_ERR_NONE );  
+    OSQDel(mbox, OS_OPT_DEL_ALWAYS, &ucErr);
+    LWIP_ASSERT( "OSQDel ", ucErr == OS_ERR_NONE );
 }
 
 /*-----------------------------------------------------------------------------------*/
 //   Posts the "msg" to the mailbox.
 void
-sys_mbox_post(sys_mbox_t mbox, void *msg)
-{   
-    u8_t i=0;
-    OS_ERR err3;
-    
-    if( msg == NULL ) msg = (void*)&pvNullPointer;
-    OSQPost((OS_Q     *) mbox->pQ->OSEventPtr,
-            (void      *) msg,
-            (OS_MSG_SIZE) strlen(msg),
-            (OS_OPT     ) OS_OPT_POST_FIFO,
-            (OS_ERR    *) &err3);
-
-    // while((i<10) && ((ubErr = OSQPost( mbox->pQ, msg)) != OS_NO_ERR))
-    while((i<10) && (err3 != OS_ERR_NONE))
-    {
-    	i++;//if full, try 10 times
-    	// OSTimeDly(5);
-        OSTimeDly((OS_TICK )5, (OS_OPT  )OS_OPT_TIME_DLY, (OS_ERR *)&err3);
+sys_mbox_post(OS_Q* mbox, void *msg)
+{
+    OS_ERR     err3;
+    CPU_INT08U  i=0;
+    if(msg == NULL) msg = (void*) &pvNullPointer;
+  
+    /* try 10 times */
+    while(i<10){
+        OSQPost(mbox, msg, 0, OS_OPT_POST_ALL, &err3);
+        if(err3 == OS_ERR_NONE) break;
+        i++;
+        OSTimeDly(5, OS_OPT_TIME_DLY, &err3);
     }
-    //if (i==10) printf("sys_mbox_post error!\n");
+    LWIP_ASSERT( "sys_mbox_post error!\n", i !=10 );  
 }
 
 // Try to post the "msg" to the mailbox.
-err_t sys_mbox_trypost(sys_mbox_t mbox, void *msg)
+err_t sys_mbox_trypost(OS_Q* mbox, void *msg)
 {
-    OS_ERR err3;    
+    OS_ERR     err3;
+
+    if(msg == NULL) msg = (void*) &pvNullPointer;  
     
-    if(msg == NULL ) msg = (void*)&pvNullPointer;
-    OSQPost((OS_Q     *) mbox->pQ->OSEventPtr,
-            (void      *) msg,
-            (OS_MSG_SIZE) strlen(msg),
-            (OS_OPT     ) OS_OPT_POST_FIFO,
-            (OS_ERR    *) &err3);
+    OSQPost(mbox, msg, 0, OS_OPT_POST_ALL, &err3);    
     
     if(err3 != OS_ERR_NONE)
         return ERR_MEM;
-
     return ERR_OK;
 }
 
@@ -183,76 +172,60 @@ err_t sys_mbox_trypost(sys_mbox_t mbox, void *msg)
   Note that a function with a similar name, sys_mbox_fetch(), is
   implemented by lwIP. 
 */
-u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout)
-{
-    OS_ERR err3;
-    OS_MSG_SIZE p_msg_size = 1;
-    u32_t	ucos_timeout, timeout_new;
-    void	*temp;
-    
-    if(timeout != 0)
-    {
-    	ucos_timeout = (timeout * OS_CFG_TICK_RATE_HZ)/1000; //convert to timetick
-    	
-    	if(ucos_timeout < 1)
-            ucos_timeout = 1;
-    	else if(ucos_timeout > 65535)	//ucOS only support u16_t timeout
-            ucos_timeout = 65535;
-    }
-    else ucos_timeout = 0;
-    
-    timeout = OSTimeGet((OS_ERR *)&err3);
-    
-    // temp = OSQPend( mbox->pQ, (u16_t)ucos_timeout, &ucErr );
-    temp = OSQPend((OS_Q       *) mbox->pQ->OSEventPtr,
-            (OS_TICK     ) ucos_timeout,
-            (OS_OPT      ) OS_OPT_PEND_BLOCKING,
-            (OS_MSG_SIZE*) &p_msg_size,
-            (CPU_TS     *) &timeout_new,
-            (OS_ERR     *) &err3);
-    
-    if(msg != NULL)
-    {
-    	if( temp == (void*)&pvNullPointer )
-            *msg = NULL;
-    	else
-            *msg = temp;
-    }   
-    
-    if (err3 == OS_ERR_TIMEOUT) 
-        timeout = SYS_ARCH_TIMEOUT;
-    else
-    {
-    	LWIP_ASSERT( "OSQPend ", err3 == OS_ERR_NONE);
-    	
-        // timeout_new = OSTimeGet((OS_ERR *)&err3);
-        if (timeout_new>timeout) timeout_new = timeout_new - timeout;
-        else timeout_new = 0xffffffff - timeout + timeout_new;
-        
-        timeout = timeout_new * 1000 / OS_CFG_TICK_RATE_HZ + 1; //convert to milisecond
-    }
+u32_t sys_arch_mbox_fetch(OS_Q* mbox, void **msg, u32_t timeout)
+{ 
+    OS_ERR	err3;
+    OS_MSG_SIZE   msg_size;
+    CPU_TS        ucos_timeout;  
+    CPU_TS        in_timeout = (timeout * OS_CFG_TICK_RATE_HZ)/1000;
 
-	return timeout; 
+    if(timeout && in_timeout == 0) in_timeout = 1;
+
+    *msg  = OSQPend((OS_Q       *) mbox,
+                    (OS_TICK     ) in_timeout,
+                    (OS_OPT      ) OS_OPT_PEND_BLOCKING,
+                    (OS_MSG_SIZE*) &msg_size,
+                    (CPU_TS     *) &ucos_timeout,
+                    (OS_ERR     *) &err3);
+
+    if ( err3 == OS_ERR_TIMEOUT ) 
+        ucos_timeout = SYS_ARCH_TIMEOUT;  
+    return ucos_timeout; 
+}
+
+/** 
+  * Check if an mbox is valid/allocated: 
+  * @param sys_mbox_t *mbox pointer mail box
+  * @return 1 for valid, 0 for invalid 
+  */ 
+int sys_mbox_valid(OS_Q* mbox){
+    if(mbox->NamePtr)  
+        return (strcmp(mbox->NamePtr,"?Q"))? 1:0;
+    return 0;
+}
+/** 
+  * Set an mbox invalid so that sys_mbox_valid returns 0 
+  */      
+void sys_mbox_set_invalid(sys_mbox_t *mbox)
+{
+  if(sys_mbox_valid(mbox))
+    sys_mbox_free(mbox);
 }
 
 /*-----------------------------------------------------------------------------------*/
 //  Creates and returns a new semaphore. The "count" argument specifies
 //  the initial state of the semaphore. TBD finish and test
-OS_SEM*
-sys_sem_new(u8_t count)
-{
-	// sys_sem_t pSem;
-    OS_SEM new_sem;
+err_t sys_sem_new(OS_SEM* sem, u8_t count){
     OS_ERR err3;
 
     // pSem = OSSemCreate((u16_t)count);
-    OSSemCreate((OS_SEM     *) &new_sem,
+    OSSemCreate((OS_SEM     *) sem,
                 (CPU_CHAR   *) "new_sem",
                 (OS_SEM_CTR  ) count,
                 (OS_ERR     *) &err3);
-    LWIP_ASSERT("OSSemCreate ", err3 == OS_ERR_NONE);
 
-    return &new_sem;
+    if(err3 != OS_ERR_NONE) return -1;    
+    return 0;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -273,46 +246,23 @@ sys_sem_new(u8_t count)
 */
 u32_t
 sys_arch_sem_wait(OS_SEM* sem, u32_t timeout)
-{
+{ 
     OS_ERR err3;
-    u8_t ucErr;
-    u32_t ucos_timeout, timeout_new;
+    CPU_TS ucos_timeout;
+    CPU_TS in_timeout = (timeout * OS_CFG_TICK_RATE_HZ) / 1000;
     
-    // timeout ��λ��ms�� ת��Ϊucos_timeout ��λ��TICK��
-    if(	timeout != 0)
-    {
-        ucos_timeout = (timeout * OS_CFG_TICK_RATE_HZ) / 1000; // convert to timetick
-        if(ucos_timeout < 1)
-            ucos_timeout = 1;
-        else if(ucos_timeout > 65536) // uC/OS only support u16_t pend
-            ucos_timeout = 65535; // ���ȴ�TICK�� ����uC/OS���� �����������ʱ
-    }
-    else ucos_timeout = 0;
-    
-    timeout = OSTimeGet((OS_ERR *)&err3); // ��¼��ʼʱ��
-    
-    // OSSemPend ((OS_EVENT *)sem,(u16_t)ucos_timeout, (u8_t *)&ucErr);
+    if(timeout && in_timeout == 0) in_timeout = 1;
+
     OSSemPend((OS_SEM   *) sem,
-            (OS_TICK     ) ucos_timeout,
-            (OS_OPT      ) OS_OPT_PEND_BLOCKING,
-            (CPU_TS     *) &timeout_new,
-            (OS_ERR     *) &err3);
+        (OS_TICK     ) in_timeout,
+        (OS_OPT      ) OS_OPT_PEND_BLOCKING,
+        (CPU_TS     *) &ucos_timeout,
+        (OS_ERR     *) &err3);
     
+    /*  only when timeout! */
     if(err3 == OS_ERR_TIMEOUT)
-        timeout = SYS_ARCH_TIMEOUT;	// only when timeout!
-    else
-    {    
-    	//LWIP_ASSERT( "OSSemPend ", ucErr == OS_ERR_NONE );
-        //for pbuf_free, may be called from an ISR
-        
-        // timeout_new = OSTimeGet((OS_ERR *)&err3); // ��¼��ֹʱ��
-        if (timeout_new>=timeout) timeout_new = timeout_new - timeout;
-        else timeout_new = 0xffffffff - timeout + timeout_new;
-        
-        timeout = (timeout_new * 1000 / OS_CFG_TICK_RATE_HZ + 1); //convert to milisecond Ϊʲô��1��
-    }
-    
-    return timeout;
+      ucos_timeout = SYS_ARCH_TIMEOUT;	
+    return ucos_timeout;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -341,6 +291,17 @@ sys_sem_free(OS_SEM* sem)
     OSSemDel((OS_SEM *)sem, (OS_OPT) OS_OPT_DEL_ALWAYS, (OS_ERR *) &err3);
     LWIP_ASSERT( "OSSemDel ", err3 == OS_ERR_NONE );
 }
+int sys_sem_valid(OS_SEM* sem){
+  if(sem->NamePtr)
+    return (strcmp(sem->NamePtr,"?SEM"))? 1:0;
+  else
+    return 0;
+}
+/** Set a semaphore invalid so that sys_sem_valid returns 0 */
+void sys_sem_set_invalid(OS_SEM* sem){
+  if(sys_sem_valid(sem))
+    sys_sem_free(sem);
+}
 
 /*-----------------------------------------------------------------------------------*/
 // Initialize sys arch
@@ -356,13 +317,13 @@ sys_init(void)
         //                         (void*)((u32_t)((u32_t)pcQueueMemoryPool+MEM_ALIGNMENT-1) & ~(MEM_ALIGNMENT-1)), 
         //                         MAX_QUEUES, sizeof(TQ_DESCR), &ucErr 
         //                             );
-        OSMemGet((OS_MEM   *) pQueueMem,
-                (OS_ERR    *) &err3);
-        OSMemCreate((OS_MEM    *) pQueueMem,
+        // OSMemGet((OS_MEM   *) pQueueMem,
+        //         (OS_ERR    *) &err3);
+        OSMemCreate((OS_MEM    *) &pQueueMem,
                    (CPU_CHAR   *) "pQueueMem",
-                   (void       *) ((u32_t)((u32_t)pcQueueMemoryPool+MEM_ALIGNMENT-1) & ~(MEM_ALIGNMENT-1)),
+                   (void       *) &pcQueueMemoryPool[0],
                    (OS_MEM_QTY  ) MAX_QUEUES,
-                   (OS_MEM_SIZE ) sizeof(TQ_DESCR),
+                   (OS_MEM_SIZE ) sizeof(TQ_DESCR) + sizeof(void *),
                    (OS_ERR     *) &err3);
         
         LWIP_ASSERT( "OSMemCreate ", err3 == OS_ERR_NONE);

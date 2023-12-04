@@ -1103,7 +1103,7 @@ struct  os_tmr_spoke {
 
 #if (OS_MAX_EVENTS >= 2)
 typedef struct {
-    void        *OSEventPtr;                   /* 메시지나 큐를 가리키는 포인터                            */
+    OS_Q       *OSEventPtr;                   /* 메시지나 큐를 가리키는 포인터                            */
     CPU_INT08U  OSEventTbl[OS_EVENT_TBL_SIZE]; /* 이벤트 대기 중인 태스크 목록                             */
     CPU_INT16U  OSEventCnt;                    /* 세마포어인 경우 사용하는 카운터                          */
     CPU_INT08U  OSEventType;                   /* OS_EVENT_TYPE_MBOX, OS_EVENT_TYPE_Q, OS_EVENT_TYPE_SEM   */
@@ -1111,18 +1111,6 @@ typedef struct {
 } OS_EVENT;
 #endif
 
-/*
-------------------------------------------------------------------------------------------------------------------------
-*                                                  메시지 메일 박스
-------------------------------------------------------------------------------------------------------------------------
-*/
-#if OS_MBOX_EN
-typedef struct {
-    void        *OSMsg;                        /* 메일박스의 메시지를 가리키는 포인터                      */
-    CPU_INT08U  OSEventTbl[OS_EVENT_TBL_SIZE]; /* 이벤트 대기 중인 태스크 목록                             */
-    CPU_INT08U  OSEventGrp;                    /* 이벤트 발생을 기다리는 태스크의 해당 그룹                */
-} OS_MBOX_DATA;
-#endif
 
 /*$PAGE*/
 /*

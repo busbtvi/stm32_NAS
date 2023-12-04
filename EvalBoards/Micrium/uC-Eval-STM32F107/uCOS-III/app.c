@@ -170,28 +170,26 @@ static  void  AppTaskStart (void *p_arg){
     OS_CPU_SysTickInit(cnts);                                   /* Init uC/OS periodic time src (SysTick).              */
 
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
+
+	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
+		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
+	#endif
+	
     Init_lwIP();
-
-#if OS_CFG_STAT_TASK_EN > 0u
-    OSStatTaskCPUUsageInit(&err);                               /* Compute CPU capacity with no task running            */
-#endif
-
-    CPU_IntDisMeasMaxCurReset();
-
-// #if (APP_CFG_SERIAL_EN == DEF_ENABLED)
-//     BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
-// #endif
+    // CPU_IntDisMeasMaxCurReset();
     
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
+
+	tcpecho_init();
+	APP_TRACE_INFO(("tcpecho_init done\n\r"));
     
-    APP_TRACE_INFO(("Creating Application Events...\n\r"));
-    AppObjCreate();                                             /* Create Application Objects                           */
+    // APP_TRACE_INFO(("Creating Application Events...\n\r"));
+    // AppObjCreate();                                             /* Create Application Objects                           */
     
     BSP_LED_On(0); // "Set the bit" turns off the LED (STM32F107VC board)
 
     while (DEF_TRUE) {                                          /* Task body, always written as an infinite loop.       */
-			
         OSTimeDlyHMSM(0, 0, 0, 100,
                       OS_OPT_TIME_HMSM_STRICT,
                       &err);
@@ -224,7 +222,7 @@ static  void  AppTaskCreate (void)
 							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
 							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
 							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_FIRST_RR_TIME_QUANTA,
+							 (OS_TICK     )0,
 							 (void       *)0,
 							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 							 (OS_ERR     *)&err);
@@ -289,7 +287,10 @@ static void AppTaskFirst (void *p_arg) {
 		taskFirstCount++;
 		if (taskFirstCount % TASK_COUNT_PERIOD == 0) {
 			BSP_LED_Toggle(1);
-			// USART_SendData(USART2, '*');
+			USART_SendData(USART2, '*');
+			OSTimeDlyHMSM(0, 0, 1, 0,
+							OS_OPT_TIME_HMSM_STRICT,
+							&err);
 		}
 	}
 }

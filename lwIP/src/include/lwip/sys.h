@@ -107,12 +107,16 @@ void sys_untimeout(sys_timeout_handler h, void *arg);
 struct sys_timeouts *sys_arch_timeouts(void);
 
 /* Semaphore functions. */
-OS_SEM* sys_sem_new(u8_t count);
+err_t sys_sem_new(OS_SEM* sem,u8_t count);
 void sys_sem_signal(OS_SEM* sem);
 u32_t sys_arch_sem_wait(OS_SEM* sem, u32_t timeout);
+int sys_mbox_valid(OS_Q* mbox);
+void sys_mbox_set_invalid(sys_mbox_t *mbox);
 void sys_sem_free(OS_SEM* sem);
 void sys_sem_wait(OS_SEM* sem);
 int sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout);
+int sys_sem_valid(OS_SEM* sem);
+void sys_sem_set_invalid(OS_SEM* sem);
 
 /* Time functions. */
 // #ifndef sys_msleep
@@ -123,17 +127,17 @@ u32_t sys_jiffies(void); /* since power up. */
 #endif
 
 /* Mailbox functions. */
-sys_mbox_t sys_mbox_new(int size);
-void sys_mbox_post(sys_mbox_t mbox, void *msg);
-err_t sys_mbox_trypost(sys_mbox_t mbox, void *msg);
-u32_t sys_arch_mbox_fetch(sys_mbox_t mbox, void **msg, u32_t timeout);
+int sys_mbox_new(OS_Q* mbox ,int size);
+void sys_mbox_post(OS_Q* mbox, void *msg);
+err_t sys_mbox_trypost(OS_Q* mbox, void *msg);
+u32_t sys_arch_mbox_fetch(OS_Q* mbox, void **msg, u32_t timeout);
 #ifndef sys_arch_mbox_tryfetch /* Allow port to override with a macro */
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t mbox, void **msg);
 #endif
 /* For now, we map straight to sys_arch implementation. */
 #define sys_mbox_tryfetch(mbox, msg) sys_arch_mbox_tryfetch(mbox, msg)
-void sys_mbox_free(sys_mbox_t mbox);
-void sys_mbox_fetch(sys_mbox_t mbox, void **msg);
+void sys_mbox_free(OS_Q* mbox);
+void sys_mbox_fetch(OS_Q* mbox, void **msg);
 
 /* Thread functions. */
 sys_thread_t sys_thread_new(char *name, void (* thread)(void *arg), void *arg, int stacksize, int prio);

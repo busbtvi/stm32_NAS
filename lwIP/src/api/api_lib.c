@@ -80,10 +80,10 @@ netconn_new_with_proto_and_callback(enum netconn_type t, u8_t proto, netconn_cal
     if (conn->err != ERR_OK) {
       LWIP_ASSERT("freeing conn without freeing pcb", conn->pcb.tcp == NULL);
       LWIP_ASSERT("conn has no op_completed", conn->op_completed != SYS_SEM_NULL);
-      LWIP_ASSERT("conn has no recvmbox", conn->recvmbox != SYS_MBOX_NULL);
-      LWIP_ASSERT("conn->acceptmbox shouldn't exist", conn->acceptmbox == SYS_MBOX_NULL);
+      LWIP_ASSERT("conn has no recvmbox", sys_mbox_valid(&conn->recvmbox));
+      LWIP_ASSERT("conn->acceptmbox shouldn't exist", sys_mbox_valid(&conn->acceptmbox));
       sys_sem_free(conn->op_completed);
-      sys_mbox_free(conn->recvmbox);
+      sys_mbox_free(&conn->recvmbox);
       memp_free(MEMP_NETCONN, conn);
       return NULL;
     }
@@ -256,14 +256,14 @@ netconn_accept(struct netconn *conn)
   struct netconn *newconn;
 
   LWIP_ERROR("netconn_accept: invalid conn",       (conn != NULL),                      return NULL;);
-  LWIP_ERROR("netconn_accept: invalid acceptmbox", (conn->acceptmbox != SYS_MBOX_NULL), return NULL;);
+  LWIP_ERROR("netconn_accept: invalid acceptmbox", sys_mbox_valid(&conn->acceptmbox), return NULL;);
 
 #if LWIP_SO_RCVTIMEO
   if (sys_arch_mbox_fetch(conn->acceptmbox, (void *)&newconn, conn->recv_timeout) == SYS_ARCH_TIMEOUT) {
     newconn = NULL;
   } else
 #else
-  sys_arch_mbox_fetch(conn->acceptmbox, (void *)&newconn, 0);
+  sys_arch_mbox_fetch(&conn->acceptmbox, (void *)&newconn, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
   {
     /* Register event with callback */
@@ -299,7 +299,7 @@ netconn_recv(struct netconn *conn)
 
   LWIP_ERROR("netconn_recv: invalid conn",  (conn != NULL), return NULL;);
 
-  if (conn->recvmbox == SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&conn->recvmbox)){
     /* @todo: should calling netconn_recv on a TCP listen conn be fatal (ERR_CONN)?? */
     /* TCP listen conns don't have a recvmbox! */
     conn->err = ERR_CONN;
@@ -331,7 +331,7 @@ netconn_recv(struct netconn *conn)
       p = NULL;
     }
 #else
-    sys_arch_mbox_fetch(conn->recvmbox, (void *)&p, 0);
+    sys_arch_mbox_fetch(&conn->recvmbox, (void *)&p, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
 
     if (p != NULL) {
@@ -376,7 +376,7 @@ netconn_recv(struct netconn *conn)
       buf = NULL;
     }
 #else
-    sys_arch_mbox_fetch(conn->recvmbox, (void *)&buf, 0);
+    sys_arch_mbox_fetch(&conn->recvmbox, (void *)&buf, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
     if (buf!=NULL) {
       SYS_ARCH_DEC(conn->recv_avail, buf->p->tot_len);

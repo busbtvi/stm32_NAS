@@ -73,7 +73,7 @@ typedef struct {
 } TQ_DESCR, *PQ_DESCR;
 
 typedef OS_EVENT *sys_sem_t; // type of semiphores
-typedef PQ_DESCR sys_mbox_t; // type of mailboxes
+typedef OS_Q       sys_mbox_t; // type of mailboxes
 typedef CPU_INT08U sys_thread_t; // type of id of the new thread
 
 typedef CPU_INT08U sys_prot_t;

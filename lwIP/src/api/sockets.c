@@ -174,8 +174,8 @@ static void lwip_setsockopt_internal(void *arg);
 void
 lwip_socket_init(void)
 {
-  socksem   = sys_sem_new(1);
-  selectsem = sys_sem_new(1);
+  sys_sem_new(socksem,  1);
+  sys_sem_new(selectsem,1);
 }
 
 /**
@@ -955,7 +955,7 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
      * list is only valid while we are in this function, so it's ok
      * to use local variables */
     
-    select_cb.sem = sys_sem_new(0);
+    sys_sem_new(select_cb.sem, 0);
     /* Note that we are still protected */
     /* Put this select_cb on top of list */
     select_cb.next = select_cb_list;

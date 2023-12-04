@@ -57,7 +57,7 @@
 /* global variables */
 static void (* tcpip_init_done)(void *arg);
 static void *tcpip_init_done_arg;
-static sys_mbox_t mbox = SYS_MBOX_NULL;
+static OS_Q mbox;
 
 #if LWIP_TCPIP_CORE_LOCKING
 /** The global semaphore to lock the stack. */
@@ -237,25 +237,25 @@ tcpip_thread(void *arg)
   struct tcpip_msg *msg;
   LWIP_UNUSED_ARG(arg);
 
-#if IP_REASSEMBLY
-  sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
-#endif /* IP_REASSEMBLY */
-#if LWIP_ARP
-  sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
-#endif /* LWIP_ARP */
-#if LWIP_DHCP
-  sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
-  sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
-#endif /* LWIP_DHCP */
-#if LWIP_AUTOIP
-  sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
-#endif /* LWIP_AUTOIP */
-#if LWIP_IGMP
-  sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
-#endif /* LWIP_IGMP */
-#if LWIP_DNS
-  sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
-#endif /* LWIP_DNS */
+// #if IP_REASSEMBLY
+//   sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
+// #endif /* IP_REASSEMBLY */
+// #if LWIP_ARP
+//   sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
+// #endif /* LWIP_ARP */
+// #if LWIP_DHCP
+//   sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
+//   sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
+// #endif /* LWIP_DHCP */
+// #if LWIP_AUTOIP
+//   sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
+// #endif /* LWIP_AUTOIP */
+// #if LWIP_IGMP
+//   sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
+// #endif /* LWIP_IGMP */
+// #if LWIP_DNS
+//   sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
+// #endif /* LWIP_DNS */
 
   if (tcpip_init_done != NULL) {
     tcpip_init_done(tcpip_init_done_arg);
@@ -263,7 +263,9 @@ tcpip_thread(void *arg)
 
   LOCK_TCPIP_CORE();
   while (1) {                          /* MAIN Loop */
-    sys_mbox_fetch(mbox, (void *)&msg);
+    APP_TRACE_INFO(("before sys_mbox_fetch\n\r"));
+    sys_mbox_fetch(&mbox, (void *)&msg);
+    APP_TRACE_INFO(("after sys_mbox_fetch\n\r"));
     switch (msg->type) {
 #if LWIP_NETCONN
     case TCPIP_MSG_API:
@@ -326,7 +328,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
 {
   struct tcpip_msg *msg;
 
-  if (mbox != SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&mbox)) {
     msg = memp_malloc(MEMP_TCPIP_MSG_INPKT);
     if (msg == NULL) {  
       return ERR_MEM;
@@ -335,7 +337,7 @@ tcpip_input(struct pbuf *p, struct netif *inp)
     msg->type = TCPIP_MSG_INPKT;
     msg->msg.inp.p = p;
     msg->msg.inp.netif = inp;
-    if (sys_mbox_trypost(mbox, msg) != ERR_OK) {
+    if (sys_mbox_trypost(&mbox, msg) != ERR_OK) {
       memp_free(MEMP_TCPIP_MSG_INPKT, msg);
       return ERR_MEM;
     }
@@ -360,7 +362,7 @@ tcpip_callback_with_block(void (*f)(void *ctx), void *ctx, u8_t block)
 {
   struct tcpip_msg *msg;
 
-  if (mbox != SYS_MBOX_NULL) {
+    if (sys_mbox_valid(&mbox)) {
     msg = memp_malloc(MEMP_TCPIP_MSG_API);
     if (msg == NULL) {
       return ERR_MEM;
@@ -370,9 +372,9 @@ tcpip_callback_with_block(void (*f)(void *ctx), void *ctx, u8_t block)
     msg->msg.cb.f = f;
     msg->msg.cb.ctx = ctx;
     if (block) {
-      sys_mbox_post(mbox, msg);
+      sys_mbox_post(&mbox, msg);
     } else {
-      if (sys_mbox_trypost(mbox, msg) != ERR_OK) {
+      if (sys_mbox_trypost(&mbox, msg) != ERR_OK) {
         memp_free(MEMP_TCPIP_MSG_API, msg);
         return ERR_MEM;
       }
@@ -395,7 +397,7 @@ tcpip_timeout(u32_t msecs, sys_timeout_handler h, void *arg)
 {
   struct tcpip_msg *msg;
 
-  if (mbox != SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&mbox)) {
     msg = memp_malloc(MEMP_TCPIP_MSG_API);
     if (msg == NULL) {
       return ERR_MEM;
@@ -405,7 +407,7 @@ tcpip_timeout(u32_t msecs, sys_timeout_handler h, void *arg)
     msg->msg.tmo.msecs = msecs;
     msg->msg.tmo.h = h;
     msg->msg.tmo.arg = arg;
-    sys_mbox_post(mbox, msg);
+    sys_mbox_post(&mbox, msg);
     return ERR_OK;
   }
   return ERR_VAL;
@@ -424,7 +426,7 @@ tcpip_untimeout(sys_timeout_handler h, void *arg)
 {
   struct tcpip_msg *msg;
 
-  if (mbox != SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&mbox)) {
     msg = memp_malloc(MEMP_TCPIP_MSG_API);
     if (msg == NULL) {
       return ERR_MEM;
@@ -433,7 +435,7 @@ tcpip_untimeout(sys_timeout_handler h, void *arg)
     msg->type = TCPIP_MSG_UNTIMEOUT;
     msg->msg.tmo.h = h;
     msg->msg.tmo.arg = arg;
-    sys_mbox_post(mbox, msg);
+    sys_mbox_post(&mbox, msg);
     return ERR_OK;
   }
   return ERR_VAL;
@@ -453,10 +455,10 @@ tcpip_apimsg(struct api_msg *apimsg)
 {
   struct tcpip_msg msg;
   
-  if (mbox != SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&mbox)) {
     msg.type = TCPIP_MSG_API;
     msg.msg.apimsg = apimsg;
-    sys_mbox_post(mbox, &msg);
+    sys_mbox_post(&mbox, &msg);
     sys_arch_sem_wait(apimsg->msg.conn->op_completed, 0);
     return ERR_OK;
   }
@@ -498,7 +500,7 @@ tcpip_netifapi(struct netifapi_msg* netifapimsg)
 {
   struct tcpip_msg msg;
   
-  if (mbox != SYS_MBOX_NULL) {
+  if (sys_mbox_valid(&mbox)) {
     netifapimsg->msg.sem = sys_sem_new(0);
     if (netifapimsg->msg.sem == SYS_SEM_NULL) {
       netifapimsg->msg.err = ERR_MEM;
@@ -507,7 +509,7 @@ tcpip_netifapi(struct netifapi_msg* netifapimsg)
     
     msg.type = TCPIP_MSG_NETIFAPI;
     msg.msg.netifapimsg = netifapimsg;
-    sys_mbox_post(mbox, &msg);
+    sys_mbox_post(&mbox, &msg);
     sys_sem_wait(netifapimsg->msg.sem);
     sys_sem_free(netifapimsg->msg.sem);
     return netifapimsg->msg.err;
@@ -550,25 +552,27 @@ tcpip_init(void (* initfunc)(void *), void *arg)
 
   tcpip_init_done = initfunc;
   tcpip_init_done_arg = arg;
-  mbox = sys_mbox_new(TCPIP_MBOX_SIZE);
+  // mbox = sys_mbox_new(TCPIP_MBOX_SIZE);
+  OSQCreate(&mbox, "TCPIP MBOX", TCPIP_MBOX_SIZE, &err3);
 #if LWIP_TCPIP_CORE_LOCKING
   lock_tcpip_core = sys_sem_new(1);
 #endif /* LWIP_TCPIP_CORE_LOCKING */
 
   // sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
   OSTaskCreate((OS_TCB     *)&TcpIpThreadTCB,
-              (CPU_CHAR   *) TCPIP_THREAD_NAME,
+              (CPU_CHAR   *) "TCPIP Thread",
               (OS_TASK_PTR ) tcpip_thread,
               (void       *) NULL,
               (OS_PRIO     ) LWIP_START_PRIO + TCPIP_THREAD_PRIO - 1,
-              (CPU_STK    *) &TcpIpThreadSTK,
+              (CPU_STK    *) &TcpIpThreadSTK[0],
               (CPU_STK_SIZE) TCPIP_THREAD_STACKSIZE / 10,
               (CPU_STK_SIZE) TCPIP_THREAD_STACKSIZE,
               (OS_MSG_QTY  ) 0,
               (OS_TICK     ) 0,
               (void       *) 0,
-              (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-              (OS_ERR     *)&err3);
+              (OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+              (OS_ERR     *) &err3);
+  APP_TRACE_INFO(("OSTaskCreate done\n\r"));
 }
 
 /**

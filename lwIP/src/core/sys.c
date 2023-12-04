@@ -63,7 +63,7 @@ struct sswt_cb
  * @param msg the place to store the message
  */
 void
-sys_mbox_fetch(sys_mbox_t mbox, void **msg)
+sys_mbox_fetch(OS_Q* mbox, void **msg)
 {
   u32_t time_needed;
   struct sys_timeouts *timeouts;
