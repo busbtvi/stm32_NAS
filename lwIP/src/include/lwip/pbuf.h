@@ -96,8 +96,9 @@ struct pbuf {
 };
 
 /* Initializes the pbuf module. This call is empty for now, but may not be in future. */
-#define pbuf_init()
+// #define pbuf_init()
 
+void pbuf_init(void);
 struct pbuf *pbuf_alloc(pbuf_layer l, u16_t size, pbuf_type type);
 void pbuf_realloc(struct pbuf *p, u16_t size); 
 u8_t pbuf_header(struct pbuf *p, s16_t header_size);

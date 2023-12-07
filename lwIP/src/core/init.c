@@ -226,7 +226,7 @@ lwip_sanity_check(void)
  * Perform Sanity check of user-configurable values, and initialize all modules.
  */
 void
-lwip_init(void)
+lwip_init(void) 
 {
   /* Sanity check user-configurable values */
   lwip_sanity_check();
@@ -237,7 +237,9 @@ lwip_init(void)
   // mem_init();
   memp_init();
   
-  // pbuf_init();
+  APP_TRACE_INFO(("before pbuf_init\n\r"));
+  pbuf_init();
+  APP_TRACE_INFO(("pbuf_init end\n\r"));
   // netif_init();
 #if LWIP_SOCKET
   lwip_socket_init();

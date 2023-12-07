@@ -82,6 +82,7 @@ struct ethernetif
   /* Add whatever per-interface state that is needed here. */
   int unused;
 };
+struct ethernetif ethernetif_init_struct;
 
 /* Forward declarations. */
 err_t  ethernetif_input(struct netif *netif);
@@ -350,7 +351,8 @@ ethernetif_init(struct netif *netif)
 
   LWIP_ASSERT("netif != NULL", (netif != NULL));
 
-  ethernetif = mem_malloc(sizeof(struct ethernetif));
+  // ethernetif = mem_malloc(sizeof(struct ethernetif));
+  ethernetif = &ethernetif_init_struct;
   if (ethernetif == NULL)
   {
     LWIP_DEBUGF(NETIF_DEBUG, ("ethernetif_init: out of memory\n"));

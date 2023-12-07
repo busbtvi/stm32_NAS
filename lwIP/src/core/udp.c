@@ -62,12 +62,31 @@
 #include "snmp.h"
 #include "arch/perf.h"
 #include "dhcp.h"
+#include "os.h"
+#include "app_cfg.h"
 
 #include <string.h>
 
 /* The list of UDP PCBs */
 /* exported in udp.h (was static) */
 struct udp_pcb *udp_pcbs;
+
+static OS_MEM udp_pcbMem;
+static char udp_pcbMemSpace[5][sizeof(struct udp_pcb) + sizeof(void *)];
+
+void udp_init(){
+    OS_ERR err3;
+    OSMemCreate((OS_MEM *)&udp_pcbMem,
+                (CPU_CHAR *)"udp_pcbMem",
+                (void *)&udp_pcbMemSpace[0],
+                (OS_MEM_QTY) 5,
+                (OS_MEM_SIZE) (sizeof(struct udp_pcb) + sizeof(void *)),
+                (OS_ERR *) &err3);
+    if(err3 != OS_ERR_NONE){
+      APP_TRACE_INFO(("udp_pcbMem create failed\r\n"));
+    }
+    APP_TRACE_INFO(("udp_init called\n"));
+}
 
 /**
  * Process an incoming UDP datagram.
@@ -774,6 +793,7 @@ void
 udp_remove(struct udp_pcb *pcb)
 {
   struct udp_pcb *pcb2;
+  OS_ERR err3;
 
   snmp_delete_udpidx_tree(pcb);
   /* pcb to be removed is first in list? */
@@ -789,7 +809,11 @@ udp_remove(struct udp_pcb *pcb)
         pcb2->next = pcb->next;
       }
     }
-  memp_free(MEMP_UDP_PCB, pcb);
+  // memp_free(MEMP_UDP_PCB, pcb);
+
+  OSMemPut((OS_MEM *) &udp_pcbMem,
+           (void *) pcb,
+           (OS_ERR *) &err3);
 }
 
 /**
@@ -804,7 +828,11 @@ struct udp_pcb *
 udp_new(void)
 {
   struct udp_pcb *pcb;
-  pcb = memp_malloc(MEMP_UDP_PCB);
+  OS_ERR err3;
+  
+  pcb = (struct udp_pcb *) OSMemGet((OS_MEM *)&udp_pcbMem,
+                                   (OS_ERR *)&err3);
+  // pcb = memp_malloc(MEMP_UDP_PCB);
   /* could allocate UDP PCB? */
   if (pcb != NULL) {
     /* UDP Lite: by initializing to all zeroes, chksum_len is set to 0
@@ -813,6 +841,7 @@ udp_new(void)
     /* initialize PCB to all zeroes */
     memset(pcb, 0, sizeof(struct udp_pcb));
     pcb->ttl = UDP_TTL;
+    APP_TRACE_INFO(("udp_new: pcb->ttl = %d\r\n", pcb->ttl));
   }
   return pcb;
 }

@@ -145,6 +145,8 @@ static void dhcp_option_long(struct dhcp *dhcp, u32_t value);
 /* always add the DHCP options trailer to end and pad */
 static void dhcp_option_trailer(struct dhcp *dhcp);
 
+struct dhcp dhcpInit;
+
 /**
  * Back-off the DHCP client (because of a received NAK response).
  *
@@ -590,7 +592,8 @@ dhcp_start(struct netif *netif)
   /* no DHCP client attached yet? */
   if (dhcp == NULL) {
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_start(): starting new DHCP client\n"));
-    dhcp = mem_malloc(sizeof(struct dhcp));
+    // dhcp = mem_malloc(sizeof(struct dhcp));
+    dhcp = &dhcpInit;
     if (dhcp == NULL) {
       LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_start(): could not allocate dhcp\n"));
       return ERR_MEM;
@@ -615,7 +618,8 @@ dhcp_start(struct netif *netif)
   dhcp->pcb = udp_new();
   if (dhcp->pcb == NULL) {
     LWIP_DEBUGF(DHCP_DEBUG  | LWIP_DBG_TRACE, ("dhcp_start(): could not obtain pcb\n"));
-    mem_free((void *)dhcp);
+    // dhcp is static now
+    // mem_free((void *)dhcp);
     netif->dhcp = dhcp = NULL;
     return ERR_MEM;
   }
@@ -627,7 +631,9 @@ dhcp_start(struct netif *netif)
   udp_connect(dhcp->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
   /* set up the recv callback and argument */
   udp_recv(dhcp->pcb, dhcp_recv, netif);
-  LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_start(): starting DHCP configuration\n"));
+
+  APP_TRACE_INFO(("dhcp_start(): starting DHCP configuration\n"));
+  // LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_start(): starting DHCP configuration\n"));
   /* (re)start the DHCP negotiation */
   result = dhcp_discover(netif);
   if (result != ERR_OK) {
@@ -794,6 +800,7 @@ dhcp_discover(struct netif *netif)
   /* create and initialize the DHCP message header */
   result = dhcp_create_request(netif);
   if (result == ERR_OK) {
+    APP_TRACE_INFO(("dhcp create request ok\n"));
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: making request\n"));
     dhcp_option(dhcp, DHCP_OPTION_MESSAGE_TYPE, DHCP_OPTION_MESSAGE_TYPE_LEN);
     dhcp_option_byte(dhcp, DHCP_DISCOVER);
@@ -810,7 +817,7 @@ dhcp_discover(struct netif *netif)
     dhcp_option_trailer(dhcp);
 
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: realloc()ing\n"));
-    pbuf_realloc(dhcp->p_out, sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN + dhcp->options_out_len);
+    // pbuf_realloc(dhcp->p_out, sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN + dhcp->options_out_len);
 
     udp_connect(dhcp->pcb, IP_ADDR_ANY, DHCP_SERVER_PORT);
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: sendto(DISCOVER, IP_ADDR_BROADCAST, DHCP_SERVER_PORT)\n"));
@@ -819,7 +826,8 @@ dhcp_discover(struct netif *netif)
     dhcp_delete_request(netif);
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_STATE, ("dhcp_discover: SELECTING\n"));
   } else {
-    LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | 2, ("dhcp_discover: could not allocate DHCP request\n"));
+    APP_TRACE_INFO(("dhcp_discover: could not allocate DHCP request\n"));
+    // LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | 2, ("dhcp_discover: could not allocate DHCP request\n"));
   }
   dhcp->tries++;
 #if LWIP_DHCP_AUTOIP_COOP

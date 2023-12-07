@@ -34,6 +34,8 @@
 #define __LWIP_MEMP_H__
 
 #include "opt.h"
+#include "os.h"
+#include "sys.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,38 +78,44 @@ typedef enum {
 #endif /* MEM_USE_POOLS */
 
 #if MEMP_MEM_MALLOC || MEM_USE_POOLS
-extern const u16_t memp_sizes[MEMP_MAX];
+// extern const u16_t memp_sizes[MEMP_MAX];
+static OS_MEM memp;
+static char memp_memory[3][1500 + sizeof(void *)];
+static OS_SEM memSem;
+
+// static OS_MEM timeoutMemp;
+// static char timeoutMemp_memory[5][sizeof(struct sys_timeo) + sizeof(void *)];
 #endif /* MEMP_MEM_MALLOC || MEM_USE_POOLS */
 
-#if MEMP_MEM_MALLOC
+// #if MEMP_MEM_MALLOC
 
 #include "mem.h"
 
-#define memp_init()
-#define memp_malloc(type)     mem_malloc(memp_sizes[type])
+#define memp_init()           mem_init()
+#define memp_malloc(type)     mem_malloc(type)
 #define memp_free(type, mem)  mem_free(mem)
 
-#else /* MEMP_MEM_MALLOC */
+// #else /* MEMP_MEM_MALLOC */
 
-#if MEM_USE_POOLS
-/** This structure is used to save the pool one element came from. */
-struct memp_malloc_helper
-{
-   memp_t poolnr;
-};
-#endif /* MEM_USE_POOLS */
+// #if MEM_USE_POOLS
+// /** This structure is used to save the pool one element came from. */
+// struct memp_malloc_helper
+// {
+//    memp_t poolnr;
+// };
+// #endif /* MEM_USE_POOLS */
 
-void  memp_init(void);
+// void  memp_init(void);
 
-#if MEMP_OVERFLOW_CHECK
-void *memp_malloc_fn(memp_t type, const char* file, const int line);
-#define memp_malloc(t) memp_malloc_fn((t), __FILE__, __LINE__)
-#else
-void *memp_malloc(memp_t type);
-#endif
-void  memp_free(memp_t type, void *mem);
+// #if MEMP_OVERFLOW_CHECK
+// void *memp_malloc_fn(memp_t type, const char* file, const int line);
+// #define memp_malloc(t) memp_malloc_fn((t), __FILE__, __LINE__)
+// #else
+// void *memp_malloc(memp_t type);
+// #endif
+// void  memp_free(memp_t type, void *mem);
 
-#endif /* MEMP_MEM_MALLOC */
+// #endif /* MEMP_MEM_MALLOC */
 
 #ifdef __cplusplus
 }
