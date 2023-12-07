@@ -31,7 +31,7 @@
  */
 
 #include "udpecho.h"
-
+#include "os.h"
 #include "opt.h"
 
 #if LWIP_NETCONN
@@ -42,6 +42,10 @@
 #define UDP_ECHO_PORT   7
 
 /*-----------------------------------------------------------------------------------*/
+
+OS_TCB udpecho_threadTCB;
+CPU_STK udpecho_threadSTK[LWIP_STK_SIZE];
+
 static void
 udpecho_thread(void *arg)
 {
@@ -76,7 +80,25 @@ udpecho_thread(void *arg)
 void
 udpecho_init(void)
 { /* Create 1 uC/OS-II Task Priority = LWIP_START_PRIO + (2 - 1) */  
-  sys_thread_new("udpecho", udpecho_thread, NULL, LWIP_STK_SIZE, 2);
+  // sys_thread_new("udpecho", udpecho_thread, NULL, LWIP_STK_SIZE, 2);
+  OS_ERR err3;
+  OSTaskCreate((OS_TCB     *)&udpecho_threadTCB,
+                (CPU_CHAR   *) "udpecho",
+                (OS_TASK_PTR ) udpecho_thread,
+                (void       *) NULL,
+                (OS_PRIO     ) LWIP_START_PRIO + 2 - 1,
+                (CPU_STK    *) &udpecho_threadSTK[0],
+                (CPU_STK_SIZE) LWIP_STK_SIZE / 10,
+                (CPU_STK_SIZE) LWIP_STK_SIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *) &err3);
+
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("udpecho_init: OSTaskCreate err %d\n", err3));
+  }
 }
 
 #endif /* LWIP_NETCONN */

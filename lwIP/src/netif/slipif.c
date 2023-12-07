@@ -44,6 +44,7 @@
 
 #include "slipif.h"
 #include "opt.h"
+#include "os.h"
 
 #if LWIP_HAVE_SLIPIF
 
@@ -60,6 +61,9 @@
 #define SLIP_ESC_ESC 0335 /* 0xDD */
 
 #define MAX_SIZE     1500
+
+OS_TCB slipif_loopTCB;
+CPU_STK slipif_loopSTK[SLIPIF_THREAD_STACKSIZE];
 
 /**
  * Send a pbuf doing the necessary SLIP encapsulation
@@ -273,7 +277,21 @@ slipif_init(struct netif *netif)
   NETIF_INIT_SNMP(netif, snmp_ifType_slip, 0);
 
   /* Create a thread to poll the serial line. */
-  sys_thread_new(SLIPIF_THREAD_NAME, slipif_loop, netif, SLIPIF_THREAD_STACKSIZE, SLIPIF_THREAD_PRIO);
+  // sys_thread_new(SLIPIF_THREAD_NAME, slipif_loop, netif, SLIPIF_THREAD_STACKSIZE, SLIPIF_THREAD_PRIO);
+  OS_ERR err3;
+  OSTaskCreate((OS_TCB     *)&slipif_loopTCB,
+                (CPU_CHAR   *) "slipif_loop",
+                (OS_TASK_PTR ) slipif_loop,
+                (void       *) netif,
+                (OS_PRIO     ) LWIP_START_PRIO + SLIPIF_THREAD_PRIO - 1,
+                (CPU_STK    *) &slipif_loopSTK[0],
+                (CPU_STK_SIZE) SLIPIF_THREAD_STACKSIZE / 10,
+                (CPU_STK_SIZE) SLIPIF_THREAD_STACKSIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *) &err3);
   return ERR_OK;
 }
 #endif /* LWIP_HAVE_SLIPIF */

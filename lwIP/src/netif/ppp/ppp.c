@@ -108,10 +108,14 @@
 #endif /* PPPOE_SUPPORT */
 
 #include <string.h>
+#include "os.h"
 
 /*************************/
 /*** LOCAL DEFINITIONS ***/
 /*************************/
+
+OS_TCB pppMainTCB;
+CPU_STK pppMainStk[PPP_THREAD_STACKSIZE];
 
 /*
  * The basic PPP frame.
@@ -552,7 +556,25 @@ pppOverSerialOpen(sio_fd_t fd, void (*linkStatusCB)(void *ctx, int errCode, void
     pc->linkStatusCB = linkStatusCB;
     pc->linkStatusCtx = linkStatusCtx;
 
-    sys_thread_new(PPP_THREAD_NAME, pppMain, (void*)pd, PPP_THREAD_STACKSIZE, PPP_THREAD_PRIO);
+    // sys_thread_new(PPP_THREAD_NAME, pppMain, (void*)pd, PPP_THREAD_STACKSIZE, PPP_THREAD_PRIO);
+    OS_ERR err3;
+    OSTaskCreate((OS_TCB     *)&pppMainTCB,
+                (CPU_CHAR   *) "pppMain",
+                (OS_TASK_PTR ) pppMain,
+                (void       *) pd,
+                (OS_PRIO     ) LWIP_START_PRIO + PPP_THREAD_PRIO - 1,
+                (CPU_STK    *) &pppMainStk[0],
+                (CPU_STK_SIZE) PPP_THREAD_STACKSIZE / 10,
+                (CPU_STK_SIZE) PPP_THREAD_STACKSIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *) &err3);
+    if (err3 != OS_ERR_NONE) {
+      APP_TRACE_INFO(("pppOverSerialOpen: OSTaskCreate failed %d\n", err3));
+      return 0;
+    }
     if(!linkStatusCB) {
       while(pd >= 0 && !pc->if_up) {
         // sys_msleep(500);

@@ -30,7 +30,7 @@
  *
  */
 #include "tcpecho.h"
-
+#include "os.h"
 #include "opt.h"
 
 #if LWIP_NETCONN
@@ -40,6 +40,10 @@
 
 #define TCP_ECHO_PORT   7
 /*-----------------------------------------------------------------------------------*/
+
+static OS_TCB tcpecho_threadTCB;
+static CPU_STK tcpecho_threadStk[LWIP_STK_SIZE];
+
 static void 
 tcpecho_thread(void *arg)
 {
@@ -88,11 +92,26 @@ tcpecho_thread(void *arg)
   }
 }
 /*-----------------------------------------------------------------------------------*/
-void
-tcpecho_init(void)
-{
-    /* Create 1 uC/OS-II Task Priority = LWIP_START_PRIO + (2 - 1) */  
-    sys_thread_new("tcpecho", tcpecho_thread, NULL, LWIP_STK_SIZE, 2);
+void tcpecho_init(void){
+    OS_ERR err3;
+    // sys_thread_new("tcpecho", tcpecho_thread, NULL, LWIP_STK_SIZE, 2);
+    OSTaskCreate((OS_TCB     *)&tcpecho_threadTCB,
+                (CPU_CHAR   *) "tcpecho",
+                (OS_TASK_PTR ) tcpecho_thread,
+                (void       *) NULL,
+                (OS_PRIO     ) LWIP_START_PRIO + 2 - 1,
+                (CPU_STK    *) &tcpecho_threadStk[0],
+                (CPU_STK_SIZE) LWIP_STK_SIZE / 10,
+                (CPU_STK_SIZE) LWIP_STK_SIZE,
+                (OS_MSG_QTY  ) 0,
+                (OS_TICK     ) 0,
+                (void       *) 0,
+                (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                (OS_ERR     *) &err3);
+    if(err3 != OS_ERR_NONE){
+      APP_TRACE_INFO(("tcpecho_init: OSTaskCreate failed %d\n", err3));
+      return;
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 
