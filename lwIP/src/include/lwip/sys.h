@@ -52,7 +52,6 @@ struct sys_timeo {u8_t dummy;};
 #define sys_sem_new(c) c
 #define sys_sem_signal(s)
 #define sys_sem_wait(s)
-#define sys_sem_wait_timeout(s,t)
 #define sys_arch_sem_wait(s,t)
 #define sys_sem_free(s)
 #define sys_mbox_new(s) 0
@@ -114,7 +113,6 @@ int sys_mbox_valid(OS_Q* mbox);
 void sys_mbox_set_invalid(sys_mbox_t *mbox);
 void sys_sem_free(OS_SEM* sem);
 void sys_sem_wait(OS_SEM* sem);
-int sys_sem_wait_timeout(OS_SEM* sem, u32_t timeout);
 int sys_sem_valid(OS_SEM* sem);
 void sys_sem_set_invalid(OS_SEM* sem);
 

@@ -53,6 +53,7 @@
 #include "init.h"
 #include "etharp.h"
 #include "ppp_oe.h"
+#include "os.h"
 
 /* global variables */
 static void (* tcpip_init_done)(void *arg);
@@ -66,30 +67,72 @@ sys_sem_t lock_tcpip_core;
 
 #if LWIP_TCP
 /* global variable that shows if the tcp timer is currently scheduled or not */
-static int tcpip_tcp_timer_active;
-static  OS_TCB   TcpIpThreadTCB;
-static  CPU_STK  TcpIpThreadSTK[TCPIP_THREAD_STACKSIZE];
+// static int tcpip_tcp_timer_active;
+static char    tcpip_tcp_timerCreated = 0;
+static OS_TCB  TcpIpThreadTCB;
+static CPU_STK TcpIpThreadSTK[TCPIP_THREAD_STACKSIZE];
+
+static OS_TCB   tcpip_tcp_timerTCB;
+static CPU_STK  tcpip_tcp_timerSTK[128];
+
+#define TimeTaskPrio 5
+#if IP_REASSEMBLY
+static OS_TCB ip_reass_timerTCB;
+static CPU_STK ip_reass_timerSTK[128];
+#endif /* IP_REASSEMBLY */
+#if LWIP_ARP
+static OS_TCB arp_timerTCB;
+static CPU_STK arp_timerSTK[128];
+#endif /* LWIP_ARP */
+#if LWIP_DHCP
+static OS_TCB dhcp_timer_coarseTCB;
+static CPU_STK dhcp_timer_coarseSTK[128];
+static OS_TCB dhcp_timer_fineTCB;
+static CPU_STK dhcp_timer_fineSTK[128];
+#endif /* LWIP_DHCP */
+#if LWIP_AUTOIP
+static OS_TCB autoip_timerTCB;
+static CPU_STK autoip_timerSTK[128];
+#endif /* LWIP_AUTOIP */
+#if LWIP_IGMP
+static OS_TCB igmp_timerTCB;
+static CPU_STK igmp_timerSTK[128];
+#endif /* LWIP_IGMP */
+#if LWIP_DNS
+static OS_TCB dns_timerTCB;
+static CPU_STK dns_timerSTK[128];
+#endif /* LWIP_DNS */
 
 /**
  * Timer callback function that calls tcp_tmr() and reschedules itself.
  *
  * @param arg unused argument
  */
-static void
-tcpip_tcp_timer(void *arg)
-{
-  LWIP_UNUSED_ARG(arg);
+static void tcpip_tcp_timer(void *arg){
+  // LWIP_UNUSED_ARG(arg);
 
-  /* call TCP timer handler */
-  tcp_tmr();
-  /* timer still needed? */
-  if (tcp_active_pcbs || tcp_tw_pcbs) {
-    /* restart timer */
-    sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
-  } else {
-    /* disable timer */
-    tcpip_tcp_timer_active = 0;
+  // /* call TCP timer handler */
+  // tcp_tmr();
+  // /* timer still needed? */
+  // if (tcp_active_pcbs || tcp_tw_pcbs) {
+  //   /* restart timer */
+  //   sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
+  // } else {
+  //   /* disable timer */
+  //   tcpip_tcp_timer_active = 0;
+  // }
+  OS_ERR err3;
+
+  while(DEF_ON){
+    tcp_tmr();
+    if (tcp_active_pcbs || tcp_tw_pcbs) {
+      OSTimeDlyHMSM(0, 0, 0, 250, OS_OPT_TIME_PERIODIC, &err3);
+    } else {
+      /* disable timer */
+      OSTaskSuspend(&tcpip_tcp_timerTCB, &err3);
+    }
   }
+
 }
 
 #if !NO_SYS
@@ -98,14 +141,32 @@ tcpip_tcp_timer(void *arg)
  * the reason is to have the TCP timer only running when
  * there are active (or time-wait) PCBs.
  */
-void
-tcp_timer_needed(void)
-{
-  /* timer is off but needed again? */
-  if (!tcpip_tcp_timer_active && (tcp_active_pcbs || tcp_tw_pcbs)) {
-    /* enable and start timer */
-    tcpip_tcp_timer_active = 1;
-    sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
+void tcp_timer_needed(){
+  // /* timer is off but needed again? */
+  // if (!tcpip_tcp_timer_active && (tcp_active_pcbs || tcp_tw_pcbs)) {
+  //   /* enable and start timer */
+  //   tcpip_tcp_timer_active = 1;
+  //   sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
+  // }
+  OS_ERR err3 = OS_ERR_NONE;
+
+  if(tcp_active_pcbs || tcp_tw_pcbs){
+    if(tcpip_tcp_timerCreated == 0){
+      OSTaskCreate(&tcpip_tcp_timerTCB, "tcpip_tcp_timer", tcpip_tcp_timer, 0, TimeTaskPrio,
+        &tcpip_tcp_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+      
+      if(err3 != OS_ERR_NONE){
+        APP_TRACE_INFO(("tcpip_tcp_timer: OSTaskCreate failed %d\n\r", err3));
+      }
+      else tcpip_tcp_timerCreated = 1;
+    }
+    else{
+      OSTaskResume(&tcpip_tcp_timerTCB, &err3);
+      
+      if(err3 != OS_ERR_NONE){
+        APP_TRACE_INFO(("tcpip_tcp_timer: OSTaskResume failed %d\n\r", err3));
+      }
+    }
   }
 }
 #endif /* !NO_SYS */
@@ -120,10 +181,18 @@ tcp_timer_needed(void)
 static void
 ip_reass_timer(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: ip_reass_tmr()\n"));
-  ip_reass_tmr();
-  sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: ip_reass_tmr()\n"));
+  // ip_reass_tmr();
+  // sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_PERIODIC, &err3);
+    ip_reass_tmr();
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("ip_reass_timer: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* IP_REASSEMBLY */
 
@@ -136,10 +205,18 @@ ip_reass_timer(void *arg)
 static void
 arp_timer(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: etharp_tmr()\n"));
-  etharp_tmr();
-  sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: etharp_tmr()\n"));
+  // etharp_tmr();
+  // sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    etharp_tmr();
+    OSTimeDlyHMSM(0, 0, 5, 0, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("arp_timer: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* LWIP_ARP */
 
@@ -152,10 +229,18 @@ arp_timer(void *arg)
 static void
 dhcp_timer_coarse(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dhcp_coarse_tmr()\n"));
-  dhcp_coarse_tmr();
-  sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dhcp_coarse_tmr()\n"));
+  // dhcp_coarse_tmr();
+  // sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    dhcp_coarse_tmr();
+    OSTimeDlyHMSM(0, 1, 0, 0, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("dhcp_timer_coarse: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 
 /**
@@ -166,10 +251,18 @@ dhcp_timer_coarse(void *arg)
 static void
 dhcp_timer_fine(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dhcp_fine_tmr()\n"));
-  dhcp_fine_tmr();
-  sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dhcp_fine_tmr()\n"));
+  // dhcp_fine_tmr();
+  // sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    dhcp_fine_tmr();
+    OSTimeDlyHMSM(0, 0, 0, 500, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("dhcp_timer_fine: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* LWIP_DHCP */
 
@@ -182,10 +275,18 @@ dhcp_timer_fine(void *arg)
 static void
 autoip_timer(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: autoip_tmr()\n"));
-  autoip_tmr();
-  sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: autoip_tmr()\n"));
+  // autoip_tmr();
+  // sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    autoip_tmr();
+    OSTimeDlyHMSM(0, 0, 0, 100, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("autoip_timer: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* LWIP_AUTOIP */
 
@@ -198,10 +299,18 @@ autoip_timer(void *arg)
 static void
 igmp_timer(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: igmp_tmr()\n"));
-  igmp_tmr();
-  sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: igmp_tmr()\n"));
+  // igmp_tmr();
+  // sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    igmp_tmr();
+    OSTimeDlyHMSM(0, 0, 0, 100, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("igmp_timer: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* LWIP_IGMP */
 
@@ -214,10 +323,18 @@ igmp_timer(void *arg)
 static void
 dns_timer(void *arg)
 {
-  LWIP_UNUSED_ARG(arg);
-  LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dns_tmr()\n"));
-  dns_tmr();
-  sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
+  // LWIP_UNUSED_ARG(arg);
+  // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip: dns_tmr()\n"));
+  // dns_tmr();
+  // sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
+  OS_ERR err3 = OS_ERR_NONE;
+  while(DEF_ON){
+    dns_tmr();
+    OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_PERIODIC, &err3);
+
+    if(err3 != OS_ERR_NONE)
+      APP_TRACE_INFO(("dns_timer: OSTimeDlyHMSM failed %d\n\r", err3));
+  }
 }
 #endif /* LWIP_DNS */
 
@@ -235,31 +352,69 @@ static void
 tcpip_thread(void *arg)
 {
   struct tcpip_msg *msg;
+  OS_ERR err3;
   LWIP_UNUSED_ARG(arg);
+  APP_TRACE_INFO(("tcpip_thread\n\r"));
 
-// #if IP_REASSEMBLY
-//   sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
-// #endif /* IP_REASSEMBLY */
-// #if LWIP_ARP
-//   sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
-// #endif /* LWIP_ARP */
-// #if LWIP_DHCP
-//   sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
-//   sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
-// #endif /* LWIP_DHCP */
-// #if LWIP_AUTOIP
-//   sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
-// #endif /* LWIP_AUTOIP */
-// #if LWIP_IGMP
-//   sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
-// #endif /* LWIP_IGMP */
-// #if LWIP_DNS
-//   sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
-// #endif /* LWIP_DNS */
+#if IP_REASSEMBLY
+  OSTaskCreate(&ip_reass_timerTCB, "ip_reass_timer", ip_reass_timer, 0, TimeTaskPrio,
+    &ip_reass_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread ip_reass_timer error\n\r"));
+  }
+  // sys_timeout(IP_TMR_INTERVAL, ip_reass_timer, NULL);
+#endif /* IP_REASSEMBLY */
+#if LWIP_ARP
+  OSTaskCreate(&arp_timerTCB, "arp_timer", arp_timer, 0, TimeTaskPrio,
+    &arp_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread arp_timer error\n\r"));
+  }
+  // sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
+#endif /* LWIP_ARP */
+#if LWIP_DHCP
+  OSTaskCreate(&dhcp_timer_coarseTCB, "dhcp_timer_coarse", dhcp_timer_coarse, 0, TimeTaskPrio,
+    &dhcp_timer_coarseSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread dhcp_timer_coarse error\n\r"));
+  }
+  // sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
+  OSTaskCreate(&dhcp_timer_fineTCB, "dhcp_timer_fine", dhcp_timer_fine, 0, TimeTaskPrio,
+    &dhcp_timer_fineSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread dhcp_timer_fine error\n\r"));
+  }
+  // sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
+#endif /* LWIP_DHCP */
+#if LWIP_AUTOIP
+  OSTaskCreate(&autoip_timerTCB, "autoip_timer", autoip_timer, 0, TimeTaskPrio,
+    &autoip_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread autoip_timer error\n\r"));
+  }
+  // sys_timeout(AUTOIP_TMR_INTERVAL, autoip_timer, NULL);
+#endif /* LWIP_AUTOIP */
+#if LWIP_IGMP
+  OSTaskCreate(&igmp_timerTCB, "igmp_timer", igmp_timer, 0, TimeTaskPrio,
+    &igmp_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread igmp_timer error\n\r"));
+  }
+  // sys_timeout(IGMP_TMR_INTERVAL, igmp_timer, NULL);
+#endif /* LWIP_IGMP */
+#if LWIP_DNS
+  OSTaskCreate(&dns_timerTCB, "dns_timer", dns_timer, 0, TimeTaskPrio,
+    &dns_timerSTK[0], 12, 128, 0, 0, 0, (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR), &err3);
+  if(err3 != OS_ERR_NONE){
+    APP_TRACE_INFO(("tcpip_thread dns_timer error\n\r"));
+  }
+  // sys_timeout(DNS_TMR_INTERVAL, dns_timer, NULL);
+#endif /* LWIP_DNS */
 
   if (tcpip_init_done != NULL) {
     tcpip_init_done(tcpip_init_done_arg);
   }
+  APP_TRACE_INFO(("264\n\r"));
 
   LOCK_TCPIP_CORE();
   while (1) {                          /* MAIN Loop */
@@ -300,9 +455,10 @@ tcpip_thread(void *arg)
       break;
 
     case TCPIP_MSG_TIMEOUT:
-      LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: TIMEOUT %p\n", (void *)msg));
-      sys_timeout(msg->msg.tmo.msecs, msg->msg.tmo.h, msg->msg.tmo.arg);
-      memp_free(MEMP_TCPIP_MSG_API, msg);
+      APP_TRACE_INFO(("tcpip_thread: TIMEOUT %p\n", (void *)msg));
+      // LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: TIMEOUT %p\n", (void *)msg));
+      // sys_timeout(msg->msg.tmo.msecs, msg->msg.tmo.h, msg->msg.tmo.arg);
+      // memp_free(MEMP_TCPIP_MSG_API, msg);
       break;
     case TCPIP_MSG_UNTIMEOUT:
       LWIP_DEBUGF(TCPIP_DEBUG, ("tcpip_thread: UNTIMEOUT %p\n", (void *)msg));
@@ -510,7 +666,8 @@ tcpip_netifapi(struct netifapi_msg* netifapimsg)
     msg.type = TCPIP_MSG_NETIFAPI;
     msg.msg.netifapimsg = netifapimsg;
     sys_mbox_post(&mbox, &msg);
-    sys_sem_wait(netifapimsg->msg.sem);
+    APP_TRACE_INFO(("need to do sys_sem_wait\n\r"));
+    // sys_sem_wait(netifapimsg->msg.sem);
     sys_sem_free(netifapimsg->msg.sem);
     return netifapimsg->msg.err;
   }
@@ -554,6 +711,7 @@ tcpip_init(void (* initfunc)(void *), void *arg)
   tcpip_init_done_arg = arg;
   // mbox = sys_mbox_new(TCPIP_MBOX_SIZE);
   OSQCreate(&mbox, "TCPIP MBOX", TCPIP_MBOX_SIZE, &err3);
+  APP_TRACE_INFO(("OSQCreate = %d\n\r", err3));
 #if LWIP_TCPIP_CORE_LOCKING
   lock_tcpip_core = sys_sem_new(1);
 #endif /* LWIP_TCPIP_CORE_LOCKING */

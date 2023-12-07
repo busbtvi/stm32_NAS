@@ -50,16 +50,10 @@ static char pcQueueMemoryPool[MAX_QUEUES][sizeof(TQ_DESCR) + sizeof(void*)];
 // static char pcQueueMemoryPool[MAX_QUEUES * sizeof(TQ_DESCR) + MEM_ALIGNMENT - 1];
 
 //SYS_ARCH_EXT OS_STK LWIP_TASK_STK[LWIP_TASK_MAX][LWIP_STK_SIZE];
-#define NewThreadMax  1
-static  OS_TCB   TcpServerTCB[NewThreadMax];
-static  int      availableTcbIndex = 0;
 
 /* Message queue constants. */
-#define archMESG_QUEUE_LENGTH	( 6 )
-#define archPOST_BLOCK_TIME_MS	( ( unsigned portLONG ) 10000 )
-
-struct sys_timeouts lwip_timeouts[LWIP_TASK_MAX];
-struct sys_timeouts null_timeouts;
+// #define archMESG_QUEUE_LENGTH	( 6 )
+// #define archPOST_BLOCK_TIME_MS	( ( unsigned portLONG ) 10000 )
 
 /*-----------------------------------------------------------------------------------*/
 //  Creates an empty mailbox.
@@ -327,97 +321,4 @@ sys_init(void)
                    (OS_ERR     *) &err3);
         
         LWIP_ASSERT( "OSMemCreate ", err3 == OS_ERR_NONE);
-
-	// Initialize the the per-thread sys_timeouts structures
-	// make sure there are no valid pids in the list
-	for(i = 0; i < LWIP_TASK_MAX; i++)
-	{
-            lwip_timeouts[i].next = NULL;
-	}
 }
-
-/*-----------------------------------------------------------------------------------*/
-/*
-  Returns a pointer to the per-thread sys_timeouts structure. In lwIP,
-  each thread has a list of timeouts which is represented as a linked
-  list of sys_timeout structures. The sys_timeouts structure holds a
-  pointer to a linked list of timeouts. This function is called by
-  the lwIP timeout scheduler and must not return a NULL value. 
-
-  In a single threaded sys_arch implementation, this function will
-  simply return a pointer to a global sys_timeouts variable stored in
-  the sys_arch module.
-*/
-struct sys_timeouts *
-sys_arch_timeouts(void)
-{
-    u8_t curr_prio;
-    s8_t ubldx;
-
-    // OS_TCB curr_task_pcb;
-    
-    null_timeouts.next = NULL;
-    // OSTaskQuery(OS_PRIO_INIT,&curr_task_pcb);
-    curr_prio = OSTCBCurPtr->Prio;
-
-    ubldx = (u8_t)(curr_prio - LWIP_START_PRIO);
-    
-    if((ubldx>=0) && (ubldx<LWIP_TASK_MAX))
-    {
-    	//printf("\nlwip_timeouts[%d],prio=%d!!! \n",ubldx,curr_prio);
-    	return &lwip_timeouts[ubldx];
-    }
-    else
-    {
-    	//printf("\nnull_timeouts,prio=%d!!! \n",curr_prio);
-    	return &null_timeouts;
-    }
-}
-
-/*-----------------------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------------------*/
-// TBD 
-/*-----------------------------------------------------------------------------------*/
-/*
-  Starts a new thread with priority "prio" that will begin its execution in the
-  function "thread()". The "arg" argument will be passed as an argument to the
-  thread() function. The id of the new thread is returned. Both the id and
-  the priority are system dependent.
-*/
-sys_thread_t sys_thread_new(char *name, void (* thread)(void *arg), void *arg, int stacksize, int prio)
-{
-    u8_t ubPrio = 0;
-    u8_t ucErr;
-    OS_ERR err3;
-    
-    arg = arg;
-    
-    if((prio > 0) && (prio <= LWIP_TASK_MAX))
-    {
-        ubPrio = (u8_t)(LWIP_START_PRIO + prio - 1);
-
-        if(stacksize > LWIP_STK_SIZE)   // �����ջ��С������LWIP_STK_SIZE
-            stacksize = LWIP_STK_SIZE;
-        
-        // OSTaskCreate(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio);
-        OSTaskCreate((OS_TCB     *)&TcpServerTCB[availableTcbIndex],
-                    (CPU_CHAR   *) name,
-                    (OS_TASK_PTR ) thread,
-                    (void       *) arg,
-                    (OS_PRIO     ) ubPrio,
-                    (CPU_STK    *) &LWIP_TASK_STK[prio-1][0],
-                    (CPU_STK_SIZE) stacksize / 10,
-                    (CPU_STK_SIZE) stacksize,
-                    (OS_MSG_QTY  ) 0,
-                    (OS_TICK     ) 0,
-                    (void       *) 0,
-                    (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-                    (OS_ERR     *)&err3);
-        availableTcbIndex++;
-        // OSTaskCreateExt(thread, (void *)arg, &LWIP_TASK_STK[prio-1][stacksize-1],ubPrio
-        //                 ,ubPrio,&LWIP_TASK_STK[prio-1][0],stacksize,(void *)0,OS_TASK_OPT_STK_CHK | OS_TASK_OPT_STK_CLR);
-    }
-        return ubPrio;
-}
-
-

@@ -133,7 +133,8 @@ err_t            udp_send       (struct udp_pcb *pcb, struct pbuf *p);
 /* The following functions are the lower layer interface to UDP. */
 void             udp_input      (struct pbuf *p, struct netif *inp);
 
-#define udp_init() /* Compatibility define, not init needed. */
+// #define udp_init() /* Compatibility define, not init needed. */
+void udp_init();
 
 #if UDP_DEBUG
 void udp_debug_print(struct udp_hdr *udphdr);
