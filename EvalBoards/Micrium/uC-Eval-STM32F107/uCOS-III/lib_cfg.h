@@ -112,7 +112,7 @@
 */
 
                                                         /* Configure memory allocation feature (see Note #1) :          */
-#define  LIB_MEM_CFG_ALLOC_EN           DEF_ENABLED
+#define  LIB_MEM_CFG_ALLOC_EN           DEF_DISABLED
                                                         /*   DEF_DISABLED     Memory allocation DISABLED                */
                                                         /*   DEF_ENABLED      Memory allocation ENABLED                 */
 

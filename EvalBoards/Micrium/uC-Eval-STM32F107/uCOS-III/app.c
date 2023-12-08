@@ -56,17 +56,13 @@
 *********************************************************************************************************
 */
 
-static  OS_TCB   AppTaskStartTCB;
-static  OS_TCB   AppTaskFirstTCB;
+static OS_MEM MemPool;
+static char memPoolStorage[MemPool_Size][1000];
+static OS_SEM memPoolSem;
 
-static int taskFirstCount;
-
-
-static  OS_TCB   AppTaskSecondTCB;
-static int taskSecondCount;
-
-static  OS_TCB   AppTaskThirdTCB;
-static int taskThirdCount;
+static OS_TCB AppTaskStartTCB;
+static OS_TCB AppTaskFirstTCB;
+static OS_TCB SDCardTaskTCB;
 
 /*
 *********************************************************************************************************
@@ -77,8 +73,8 @@ static int taskThirdCount;
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
 static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
 
-static  CPU_STK  AppTaskSecondStk[APP_TASK_FIRST_STK_SIZE];
-static  CPU_STK  AppTaskThirdStk[APP_TASK_FIRST_STK_SIZE];
+static CPU_STK SDCardTaskSTK[APP_TASK_FIRST_STK_SIZE];
+
 
 /*
 *********************************************************************************************************
@@ -87,12 +83,11 @@ static  CPU_STK  AppTaskThirdStk[APP_TASK_FIRST_STK_SIZE];
 */
 
 static  void  AppTaskCreate (void);
-static  void  AppObjCreate  (void);
+static  OS_ERR AppObjCreate  (void);
 static  void  AppTaskStart  (void *p_arg);
 
 static  void  AppTaskFirst  (void *p_arg);
-static  void  AppTaskSecond (void *p_arg);
-static  void  AppTaskThird  (void *p_arg);
+static void SDCardTask();
 
 
 /*
@@ -117,9 +112,9 @@ int  main (void)
 
     OSInit(&err);                                               /* Init uC/OS-III.                                      */
 	
-		OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
-                         (OS_TICK    )10000,
-                         (OS_ERR    *)&err);
+	// OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
+    //                      (OS_TICK    )10000,
+    //                      (OS_ERR    *)&err);
 
     OSTaskCreate((OS_TCB     *)&AppTaskStartTCB,                /* Create the start task                                */
                  (CPU_CHAR   *)"App Task Start",
@@ -173,26 +168,18 @@ static  void  AppTaskStart (void *p_arg)
 
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
 
-#if OS_CFG_STAT_TASK_EN > 0u
-    OSStatTaskCPUUsageInit(&err);                               /* Compute CPU capacity with no task running            */
-#endif
-
-    CPU_IntDisMeasMaxCurReset();
-
-#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
-    BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
-#endif
+	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
+		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
+	#endif
     
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
     
-    APP_TRACE_INFO(("Creating Application Events...\n\r"));
+    APP_TRACE_INFO(("Creating Application Object...\n\r"));
     AppObjCreate();                                             /* Create Application Objects                           */
     
     BSP_LED_On(0); // "Set the bit" turns off the LED (STM32F107VC board)
-
     while (DEF_TRUE) {                                          /* Task body, always written as an infinite loop.       */
-			
         OSTimeDlyHMSM(0, 0, 0, 100,
                       OS_OPT_TIME_HMSM_STRICT,
                       &err);
@@ -229,32 +216,20 @@ static  void  AppTaskCreate (void)
 							 (void       *)0,
 							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 							 (OS_ERR     *)&err);
-	OSTaskCreate((OS_TCB     *)&AppTaskSecondTCB, 
-							 (CPU_CHAR   *)"App Second Start",
-							 (OS_TASK_PTR )AppTaskSecond,
-							 (void       *)0,
-							 (OS_PRIO     )APP_TASK_FIRST_PRIO,
-							 (CPU_STK    *)&AppTaskSecondStk[0],
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_SECOND_RR_TIME_QUANTA,
-							 (void       *)0,
-							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-							 (OS_ERR     *)&err);
-	OSTaskCreate((OS_TCB     *)&AppTaskThirdTCB, 
-							 (CPU_CHAR   *)"App Third Start",
-							 (OS_TASK_PTR )AppTaskThird,
-							 (void       *)0,
-							 (OS_PRIO     )APP_TASK_FIRST_PRIO,
-							 (CPU_STK    *)&AppTaskThirdStk[0],
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_THIRD_RR_TIME_QUANTA,
-							 (void       *)0,
-							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-							 (OS_ERR     *)&err);
+
+	OSTaskCreate((OS_TCB     *) &SDCardTaskTCB, 
+				(CPU_CHAR   *)"SDCard Task",
+				(OS_TASK_PTR ) SDCardTask,
+				(void       *) 0,
+				(OS_PRIO     ) APP_TASK_FIRST_PRIO + 1,
+				(CPU_STK    *) &SDCardTaskSTK[0],
+				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE / 10,
+				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE,
+				(OS_MSG_QTY  ) 0,
+				(OS_TICK     ) 0,
+				(void       *) 0,
+				(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+				(OS_ERR     *) &err);
 }
 
 
@@ -270,8 +245,22 @@ static  void  AppTaskCreate (void)
 *********************************************************************************************************
 */
 
-static  void  AppObjCreate (void)
-{
+static OS_ERR AppObjCreate (){
+	OS_ERR err;
+
+	OSMemCreate((OS_MEM		*) &MemPool,
+				(CPU_CHAR	*) "MemPool",
+				(void *		 ) &memPoolStorage[0],
+				(OS_MEM_QTY	 ) MemPool_Size,
+				(OS_MEM_SIZE ) 1000,
+				(OS_ERR		*) &err);
+	if(err != OS_ERR_NONE) return err;
+
+	OSSemCreate((OS_SEM		*) &memPoolSem,
+				(CPU_CHAR	*) "MemPoolSem",
+				(OS_SEM_CTR	 ) MemPool_Size,
+				(OS_ERR		*) &err);
+	if(err != OS_ERR_NONE) return err;
 }
 
 
@@ -284,8 +273,7 @@ static  void  AppObjCreate (void)
 static void AppTaskFirst (void *p_arg) {
 	OS_ERR      err;
 	
-	taskFirstCount = 0;
-
+	int taskFirstCount = 0;
 	while (DEF_TRUE) {
 		taskFirstCount++;
 		if (taskFirstCount % TASK_COUNT_PERIOD == 0) {
@@ -294,29 +282,7 @@ static void AppTaskFirst (void *p_arg) {
 		}
 	}
 }
-static void AppTaskSecond (void *p_arg) {
-	OS_ERR      err;
-	
-	taskSecondCount = 0;
 
-	while (DEF_TRUE) {
-		taskSecondCount++;
-		if (taskSecondCount % TASK_COUNT_PERIOD == 0) {
-			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '@');
-		}
-	}
-}
-static void AppTaskThird (void *p_arg) {
-	OS_ERR      err;
+static void SDCardTask(){
 	
-	taskThirdCount = 0;
-
-	while (DEF_TRUE) {
-		taskThirdCount++;
-		if (taskThirdCount % TASK_COUNT_PERIOD == 0) {
-			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '#');
-		}
-	}
 }

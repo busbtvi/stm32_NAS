@@ -1,6 +1,6 @@
 ./output/bsp_stlm75.o: ..\..\BSP\bsp_stlm75.c ..\..\BSP\bsp.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
-  C:\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdarg.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdio.h \
   ..\..\..\..\..\uC-CPU\ARM-Cortex-M3\RealView\cpu.h \
   ..\..\..\..\..\uC-CPU\cpu_def.h ..\..\uCOS-III\cpu_cfg.h \
   ..\..\..\..\..\uC-CPU\cpu_core.h ..\..\..\..\..\uC-LIB\lib_def.h \
