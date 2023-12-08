@@ -70,9 +70,8 @@ sys_mbox_fetch(OS_Q* mbox, void **msg)
 {
   OS_ERR	err3;
   OS_MSG_SIZE   msg_size;
-  CPU_TS        in_timeout = 1;
 
-  *msg  = OSQPend(mbox, in_timeout, OS_OPT_PEND_BLOCKING, &msg_size, NULL, &err3);
+  *msg  = OSQPend(mbox, 0, OS_OPT_PEND_BLOCKING, &msg_size, NULL, &err3);
   if(err3 != OS_ERR_NONE){
     APP_TRACE_INFO(("sys_mbox_fetch: OSQPend err %d\n", err3));
   }

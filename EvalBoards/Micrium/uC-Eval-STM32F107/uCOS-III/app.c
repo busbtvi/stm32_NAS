@@ -181,6 +181,7 @@ static  void  AppTaskStart (void *p_arg){
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
 
+	APP_TRACE_INFO(("before tcpecho_init\n\r"));
 	tcpecho_init();
 	APP_TRACE_INFO(("tcpecho_init done\n\r"));
     
@@ -287,7 +288,8 @@ static void AppTaskFirst (void *p_arg) {
 		taskFirstCount++;
 		if (taskFirstCount % TASK_COUNT_PERIOD == 0) {
 			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '*');
+			// USART_SendData(USART2, '*');
+			APP_TRACE_INFO(("Task First Count: %d\n\r", taskFirstCount));
 			OSTimeDlyHMSM(0, 0, 1, 0,
 							OS_OPT_TIME_HMSM_STRICT,
 							&err);

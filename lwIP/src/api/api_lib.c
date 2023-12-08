@@ -547,7 +547,8 @@ netconn_gethostbyname(const char *name, struct ip_addr *addr)
   msg.sem = sem;
 
   tcpip_callback(do_gethostbyname, &msg);
-  sys_sem_wait(sem);
+  APP_TRACE_INFO(("need to fix this\n"));
+  // sys_sem_wait(sem);
   sys_sem_free(sem);
 
   return err;

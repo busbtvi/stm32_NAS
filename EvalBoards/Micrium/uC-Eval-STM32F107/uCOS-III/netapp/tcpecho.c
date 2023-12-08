@@ -47,6 +47,7 @@ static CPU_STK tcpecho_threadStk[LWIP_STK_SIZE];
 static void 
 tcpecho_thread(void *arg)
 {
+  APP_TRACE_INFO(("tcpecho_thread: starting\n"));
   struct netconn *conn, *newconn;
   err_t err;
   LWIP_UNUSED_ARG(arg);
@@ -95,6 +96,7 @@ tcpecho_thread(void *arg)
 void tcpecho_init(void){
     OS_ERR err3;
     // sys_thread_new("tcpecho", tcpecho_thread, NULL, LWIP_STK_SIZE, 2);
+    APP_TRACE_INFO(("tcpecho_init: OSTaskCreate\n"));
     OSTaskCreate((OS_TCB     *)&tcpecho_threadTCB,
                 (CPU_CHAR   *) "tcpecho",
                 (OS_TASK_PTR ) tcpecho_thread,

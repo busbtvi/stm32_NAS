@@ -65,7 +65,7 @@
  * use lwIP facilities.
  */
 #ifndef NO_SYS
-#define NO_SYS                          1
+#define NO_SYS                          0
 #endif
 
 /**
@@ -95,7 +95,7 @@
  * already use it.
  */
 #ifndef MEM_LIBC_MALLOC
-#define MEM_LIBC_MALLOC                 1
+#define MEM_LIBC_MALLOC                 0
 #endif
 
 /**
@@ -351,7 +351,7 @@
  * resolution.
  */
 #ifndef ARP_QUEUEING
-#define ARP_QUEUEING                    1
+#define ARP_QUEUEING                    0
 #endif
 
 /**
@@ -395,7 +395,7 @@
  * via IP_FRAG.
  */
 #ifndef IP_REASSEMBLY
-#define IP_REASSEMBLY                   1
+#define IP_REASSEMBLY                   0
 #endif
 
 /**
@@ -701,14 +701,14 @@
  * LWIP_UDP==1: Turn on UDP.
  */
 #ifndef LWIP_UDP
-#define LWIP_UDP                        0
+#define LWIP_UDP                        1
 #endif
 
 /**
  * LWIP_UDPLITE==1: Turn on UDP-Lite. (Requires LWIP_UDP)
  */
 #ifndef LWIP_UDPLITE
-#define LWIP_UDPLITE                    0
+#define LWIP_UDPLITE                    1
 #endif
 
 /**
@@ -1169,7 +1169,7 @@
  * LWIP_NETCONN==1: Enable Netconn API (require to use api_lib.c)
  */
 #ifndef LWIP_NETCONN
-#define LWIP_NETCONN                    1
+#define LWIP_NETCONN                    0
 #endif
 
 /*

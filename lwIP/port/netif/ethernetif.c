@@ -145,7 +145,8 @@ low_level_init(struct netif *netif)
   SYS_ARCH_DECL_PROTECT(sr);
     
   /* set MAC hardware address length */
-  netif->hwaddr_len = ETHARP_HWADDR_LEN;
+  // netif->hwaddr_len = ETHARP_HWADDR_LEN;
+  netif->hwaddr_len = 6;
 
   /* set MAC hardware address */
   netif->hwaddr[0] =  MACaddr[0];

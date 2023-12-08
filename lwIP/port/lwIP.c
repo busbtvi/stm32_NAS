@@ -67,7 +67,7 @@ void Init_lwIP(void)
     struct ip_addr ipaddr;
     struct ip_addr netmask;
     struct ip_addr gw;
-    uint8_t macaddress[6]={0,0,0,0,0,1};
+    uint8_t macaddress[6]={0xAA,0xAA,0xAA,0xAA,0xAA,0xAA};
 
     OS_ERR err3;
     
@@ -105,9 +105,9 @@ void Init_lwIP(void)
     gw.addr = 0;
 #else
     /* ���þ�̬IP */
-    IP4_ADDR(&ipaddr, 10, 21, 11, 245);
+    IP4_ADDR(&ipaddr, 192, 168, 0, 10);
     IP4_ADDR(&netmask, 255, 255, 255, 0);
-    IP4_ADDR(&gw, 10, 21, 11, 254);
+    IP4_ADDR(&gw, 192, 168, 0, 1);
 #endif
     
     Set_MAC_Address(macaddress);
