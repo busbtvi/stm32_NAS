@@ -73,7 +73,7 @@
 */
 
                                                         /* Configure external argument check feature (see Note #1) :    */
-#define  LIB_MEM_CFG_ARG_CHK_EXT_EN     DEF_ENABLED
+#define  LIB_MEM_CFG_ARG_CHK_EXT_EN     DEF_DISABLED
                                                         /*   DEF_DISABLED     Argument check DISABLED                   */
                                                         /*   DEF_ENABLED      Argument check ENABLED                    */
 
@@ -112,7 +112,7 @@
 */
 
                                                         /* Configure memory allocation feature (see Note #1) :          */
-#define  LIB_MEM_CFG_ALLOC_EN           DEF_ENABLED
+#define  LIB_MEM_CFG_ALLOC_EN           DEF_DISABLED
                                                         /*   DEF_DISABLED     Memory allocation DISABLED                */
                                                         /*   DEF_ENABLED      Memory allocation ENABLED                 */
 
