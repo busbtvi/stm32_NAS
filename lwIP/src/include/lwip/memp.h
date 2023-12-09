@@ -79,9 +79,12 @@ typedef enum {
 
 #if MEMP_MEM_MALLOC || MEM_USE_POOLS
 // extern const u16_t memp_sizes[MEMP_MAX];
-static OS_MEM memp;
-static char memp_memory[3][1500 + sizeof(void *)];
+static OS_MEM bMemPool, sMemPool;
+static char bMemPoolArray[ 3][1500 + sizeof(void *)];
+static char sMemPoolArray[10][160 + sizeof(void *)];
 static OS_SEM memSem;
+
+static char* bMemPoolAddr, *sMemPoolAddr;
 
 // static OS_MEM timeoutMemp;
 // static char timeoutMemp_memory[5][sizeof(struct sys_timeo) + sizeof(void *)];
