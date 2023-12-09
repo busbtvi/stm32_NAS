@@ -125,7 +125,7 @@ struct dns_api_msg {
   struct ip_addr *addr;
   /** This semaphore is posted when the name is resolved, the application thread
       should wait on it. */
-  sys_sem_t sem;
+  OS_SEM* sem;
   /** Errors are given back here */
   err_t *err;
 };

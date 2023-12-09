@@ -110,7 +110,7 @@ err_t sys_sem_new(OS_SEM* sem,u8_t count);
 void sys_sem_signal(OS_SEM* sem);
 u32_t sys_arch_sem_wait(OS_SEM* sem, u32_t timeout);
 int sys_mbox_valid(OS_Q* mbox);
-void sys_mbox_set_invalid(sys_mbox_t *mbox);
+void sys_mbox_set_invalid(OS_Q* mbox);
 void sys_sem_free(OS_SEM* sem);
 void sys_sem_wait(OS_SEM* sem);
 int sys_sem_valid(OS_SEM* sem);

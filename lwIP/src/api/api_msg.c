@@ -52,6 +52,8 @@
 #include "igmp.h"
 #include "dns.h"
 
+#include "os.h"
+
 #include <string.h>
 
 /* forward declarations */
@@ -84,10 +86,10 @@ recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p,
 
 #if LWIP_SO_RCVBUF
   SYS_ARCH_GET(conn->recv_avail, recv_avail);
-  if ((conn != NULL) && sys_mbox_valid(&conn->recvmbox)) &&
+  if ((conn != NULL) && sys_mbox_valid(conn->recvmbox)) &&
       ((recv_avail + (int)(p->tot_len)) <= conn->recv_bufsize)) {
 #else  /* LWIP_SO_RCVBUF */
-  if ((conn != NULL) && sys_mbox_valid(&conn->recvmbox)) {
+  if ((conn != NULL) && sys_mbox_valid(conn->recvmbox)) {
 #endif /* LWIP_SO_RCVBUF */
     /* copy the whole packet into new pbufs */
     q = pbuf_alloc(PBUF_RAW, p->tot_len, PBUF_RAM);
@@ -110,7 +112,7 @@ recv_raw(void *arg, struct raw_pcb *pcb, struct pbuf *p,
       buf->addr = &(((struct ip_hdr*)(q->payload))->src);
       buf->port = pcb->protocol;
 
-      if (sys_mbox_trypost(&conn->recvmbox, buf) != ERR_OK) {
+      if (sys_mbox_trypost(conn->recvmbox, buf) != ERR_OK) {
         netbuf_delete(buf);
         return 0;
       } else {
@@ -150,10 +152,10 @@ recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 
 #if LWIP_SO_RCVBUF
   SYS_ARCH_GET(conn->recv_avail, recv_avail);
-  if ((conn == NULL) || sys_mbox_valid(&conn->recvmbox) ||
+  if ((conn == NULL) || sys_mbox_valid(conn->recvmbox) ||
       ((recv_avail + (int)(p->tot_len)) > conn->recv_bufsize)) {
 #else  /* LWIP_SO_RCVBUF */
-  if ((conn == NULL) || sys_mbox_valid(&conn->recvmbox)) {
+  if ((conn == NULL) || sys_mbox_valid(conn->recvmbox)) {
 #endif /* LWIP_SO_RCVBUF */
     pbuf_free(p);
     return;
@@ -170,7 +172,7 @@ recv_udp(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     buf->port = port;
   }
 
-  if (sys_mbox_trypost(&conn->recvmbox, buf) != ERR_OK) {
+  if (sys_mbox_trypost(conn->recvmbox, buf) != ERR_OK) {
     netbuf_delete(buf);
     return;
   } else {
@@ -200,7 +202,7 @@ recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
   conn = arg;
   LWIP_ASSERT("recv_tcp: recv for wrong pcb!", conn->pcb.tcp == pcb);
 
-  if ((conn == NULL) || sys_mbox_valid(&conn->recvmbox)) {
+  if ((conn == NULL) || sys_mbox_valid(conn->recvmbox)) {
     return ERR_VAL;
   }
 
@@ -212,7 +214,7 @@ recv_tcp(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     len = 0;
   }
 
-  if (sys_mbox_trypost(&conn->recvmbox, p) != ERR_OK) {
+  if (sys_mbox_trypost(conn->recvmbox, p) != ERR_OK) {
     return ERR_MEM;
   } else {
     /* Register event with callback */
@@ -299,19 +301,19 @@ err_tcp(void *arg, err_t err)
   conn->pcb.tcp = NULL;
 
   conn->err = err;
-  if (sys_mbox_valid(&conn->recvmbox)) {
+  if (sys_mbox_valid(conn->recvmbox)) {
     /* Register event with callback */
     API_EVENT(conn, NETCONN_EVT_RCVPLUS, 0);
-    sys_mbox_post(&conn->recvmbox, NULL);
+    sys_mbox_post(conn->recvmbox, NULL);
   }
   if (conn->op_completed != SYS_SEM_NULL && conn->state == NETCONN_CONNECT) {
     conn->state = NETCONN_NONE;
     sys_sem_signal(conn->op_completed);
   }
-  if (sys_mbox_valid(&conn->acceptmbox)){
+  if (sys_mbox_valid(conn->acceptmbox)){
     /* Register event with callback */
     API_EVENT(conn, NETCONN_EVT_RCVPLUS, 0);
-    sys_mbox_post(&conn->acceptmbox, NULL);
+    sys_mbox_post(conn->acceptmbox, NULL);
   }
   if ((conn->state == NETCONN_WRITE) || (conn->state == NETCONN_CLOSE)) {
     /* calling do_writemore/do_close_internal is not necessary
@@ -361,7 +363,7 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
   conn = (struct netconn *)arg;
 
   LWIP_ERROR("accept_function: invalid conn->acceptmbox",
-            sys_mbox_valid(&conn->acceptmbox), return ERR_VAL;);
+            sys_mbox_valid(conn->acceptmbox), return ERR_VAL;);
 
   /* We have to set the callback here even though
    * the new socket is unknown. conn->socket is marked as -1. */
@@ -373,7 +375,7 @@ accept_function(void *arg, struct tcp_pcb *newpcb, err_t err)
   setup_tcp(newconn);
   newconn->err = err;
 
-  if (sys_mbox_trypost(&conn->acceptmbox, newconn) != ERR_OK) {
+  if (sys_mbox_trypost(conn->acceptmbox, newconn) != ERR_OK) {
     /* When returning != ERR_OK, the connection is aborted in tcp_process(),
        so do nothing here! */
     newconn->pcb.tcp = NULL;
@@ -486,8 +488,10 @@ netconn_alloc(enum netconn_type t, netconn_callback callback)
   struct netconn *conn;
   int size;
 
+  APP_TRACE_INFO(("netconn_alloc start\n\r"));
   conn = (struct netconn *)memp_malloc(MEMP_NETCONN);
   if (conn == NULL) {
+    APP_TRACE_INFO(("netconn_alloc: out of memory\n"));
     return NULL;
   }
 
@@ -521,18 +525,24 @@ netconn_alloc(enum netconn_type t, netconn_callback callback)
   }
 #endif
 
+  conn->op_completed = (OS_SEM*) mem_malloc(sizeof(OS_SEM));
   if (sys_sem_new(conn->op_completed, 0) != ERR_OK) {
+    APP_TRACE_INFO(("netconn_alloc: op_completed semaphore allocation error\n\r"));
     memp_free(MEMP_NETCONN, conn);
     return NULL;
   }
-  if (sys_mbox_new(&conn->recvmbox, size) != ERR_OK) {
+  conn->recvmbox = (OS_Q*) mem_malloc(sizeof(OS_Q));
+  if (sys_mbox_new(conn->recvmbox, size) != ERR_OK) {
+    APP_TRACE_INFO(("netconn_alloc: recvmbox mailbox allocation error\n\r"));
     sys_sem_free(conn->op_completed);
+    conn->op_completed = NULL;
     memp_free(MEMP_NETCONN, conn);
     return NULL;
   }
 
 #if LWIP_TCP
-  sys_mbox_set_invalid(&conn->acceptmbox);
+  // already null
+  // sys_mbox_set_invalid(conn->acceptmbox);
 #endif
   conn->state        = NETCONN_NONE;
 #if LWIP_SOCKET
@@ -552,6 +562,8 @@ netconn_alloc(enum netconn_type t, netconn_callback callback)
   conn->recv_avail   = 0;
 #endif /* LWIP_SO_RCVBUF */
   conn->flags = 0;
+
+  APP_TRACE_INFO(("netconn_alloc done\n\r"));
   return conn;
 }
 
@@ -566,13 +578,14 @@ netconn_free(struct netconn *conn)
 {
   LWIP_ASSERT("PCB must be deallocated outside this function", conn->pcb.tcp == NULL);
   LWIP_ASSERT("recvmbox must be deallocated before calling this function",
-    !sys_mbox_valid(&conn->recvmbox));
+    !sys_mbox_valid(conn->recvmbox));
 #if LWIP_TCP
   LWIP_ASSERT("acceptmbox must be deallocated before calling this function",
-    !sys_mbox_valid(&conn->acceptmbox));
+    !sys_mbox_valid(conn->acceptmbox));
 #endif /* LWIP_TCP */
 
   sys_sem_free(conn->op_completed);
+  conn->op_completed = NULL;
   sys_sem_set_invalid(conn->op_completed);
 
   memp_free(MEMP_NETCONN, conn);
@@ -835,14 +848,16 @@ do_listen(struct api_msg_msg *msg)
             msg->conn->err = ERR_MEM;
           } else {
             /* delete the recvmbox and allocate the acceptmbox */
-            if (sys_mbox_valid(&msg->conn->recvmbox)){
+            if (sys_mbox_valid(msg->conn->recvmbox)){
               /** @todo: should we drain the recvmbox here? */
-              sys_mbox_free(&msg->conn->recvmbox);
-              sys_mbox_set_invalid(&msg->conn->recvmbox);
+              APP_TRACE_INFO(("do_listen: deleting recvmbox\n\r"));
+              sys_mbox_free(msg->conn->recvmbox);
+              msg->conn->recvmbox = NULL;
+              sys_mbox_set_invalid(msg->conn->recvmbox);
               // msg->conn->recvmbox = SYS_MBOX_NULL;
             }
-            if (sys_mbox_valid(&msg->conn->acceptmbox)) {
-              msg->conn->err = sys_mbox_new(&msg->conn->acceptmbox, DEFAULT_ACCEPTMBOX_SIZE);
+            if (sys_mbox_valid(msg->conn->acceptmbox)) {
+              msg->conn->err = sys_mbox_new(msg->conn->acceptmbox, DEFAULT_ACCEPTMBOX_SIZE);
               // if (sys_mbox_valid(&(msg->conn->acceptmbox = sys_mbox_new(DEFAULT_ACCEPTMBOX_SIZE)))) {
               //   msg->conn->err = ERR_MEM;
               // }

@@ -124,10 +124,10 @@ struct netconn {
   OS_SEM* op_completed;
   /** mbox where received packets are stored until they are fetched
       by the netconn application thread (can grow quite big) */
-  OS_Q recvmbox;
+  OS_Q* recvmbox;
   /** mbox where new connections are stored until processed
       by the application thread */
-  OS_Q acceptmbox;
+  OS_Q* acceptmbox;
   /** only used for socket layer */
   int socket;
 #if LWIP_SO_RCVTIMEO

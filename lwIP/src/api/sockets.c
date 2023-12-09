@@ -174,8 +174,11 @@ static void lwip_setsockopt_internal(void *arg);
 void
 lwip_socket_init(void)
 {
+  socksem = (OS_SEM*) mem_malloc(sizeof(OS_SEM));
   sys_sem_new(socksem,  1);
-  sys_sem_new(selectsem,1);
+  
+  selectsem = (OS_SEM*) mem_malloc(sizeof(OS_SEM));
+  sys_sem_new(selectsem, 1);
 }
 
 /**
@@ -993,6 +996,7 @@ lwip_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset,
     sys_sem_signal(selectsem);
     
     sys_sem_free(select_cb.sem);
+    select_cb.sem = NULL;
     // if (i == 0)  {
     if (err3 == OS_ERR_TIMEOUT)  {
       /* Timeout */

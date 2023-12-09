@@ -669,6 +669,7 @@ tcpip_netifapi(struct netifapi_msg* netifapimsg)
     APP_TRACE_INFO(("need to do sys_sem_wait\n\r"));
     // sys_sem_wait(netifapimsg->msg.sem);
     sys_sem_free(netifapimsg->msg.sem);
+    netifapimsg->msg.sem = NULL;
     return netifapimsg->msg.err;
   }
   return ERR_VAL;

@@ -72,6 +72,7 @@ netconn_new_with_proto_and_callback(enum netconn_type t, u8_t proto, netconn_cal
 
   conn = netconn_alloc(t, callback);
   if (conn != NULL ) {
+    APP_TRACE_INFO(("netconn_new_with_proto_and_callback: conn->type = %d\n", conn->type));
     msg.function = do_newconn;
     msg.msg.msg.n.proto = proto;
     msg.msg.conn = conn;
@@ -80,14 +81,20 @@ netconn_new_with_proto_and_callback(enum netconn_type t, u8_t proto, netconn_cal
     if (conn->err != ERR_OK) {
       LWIP_ASSERT("freeing conn without freeing pcb", conn->pcb.tcp == NULL);
       LWIP_ASSERT("conn has no op_completed", conn->op_completed != SYS_SEM_NULL);
-      LWIP_ASSERT("conn has no recvmbox", sys_mbox_valid(&conn->recvmbox));
-      LWIP_ASSERT("conn->acceptmbox shouldn't exist", sys_mbox_valid(&conn->acceptmbox));
+      LWIP_ASSERT("conn has no recvmbox", sys_mbox_valid(conn->recvmbox));
+      LWIP_ASSERT("conn->acceptmbox shouldn't exist", sys_mbox_valid(conn->acceptmbox));
+      APP_TRACE_INFO(("before sys_sem_free(conn->op_completed)\n\r"));
       sys_sem_free(conn->op_completed);
-      sys_mbox_free(&conn->recvmbox);
+      conn->op_completed = NULL;
+      APP_TRACE_INFO(("before sys_mbox_free(conn->recvmbox)\n\r"));
+      sys_mbox_free(conn->recvmbox);
+      conn->recvmbox = NULL;
+      APP_TRACE_INFO(("sys_mbox_free done\n\r"));
       memp_free(MEMP_NETCONN, conn);
       return NULL;
     }
   }
+  else APP_TRACE_INFO(("netconn_new_with_proto_and_callback: conn == NULL\n"));
   return conn;
 }
 
@@ -256,14 +263,14 @@ netconn_accept(struct netconn *conn)
   struct netconn *newconn;
 
   LWIP_ERROR("netconn_accept: invalid conn",       (conn != NULL),                      return NULL;);
-  LWIP_ERROR("netconn_accept: invalid acceptmbox", sys_mbox_valid(&conn->acceptmbox), return NULL;);
+  LWIP_ERROR("netconn_accept: invalid acceptmbox", sys_mbox_valid(conn->acceptmbox), return NULL;);
 
 #if LWIP_SO_RCVTIMEO
   if (sys_arch_mbox_fetch(conn->acceptmbox, (void *)&newconn, conn->recv_timeout) == SYS_ARCH_TIMEOUT) {
     newconn = NULL;
   } else
 #else
-  sys_arch_mbox_fetch(&conn->acceptmbox, (void *)&newconn, 0);
+  sys_arch_mbox_fetch(conn->acceptmbox, (void *)&newconn, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
   {
     /* Register event with callback */
@@ -299,7 +306,7 @@ netconn_recv(struct netconn *conn)
 
   LWIP_ERROR("netconn_recv: invalid conn",  (conn != NULL), return NULL;);
 
-  if (sys_mbox_valid(&conn->recvmbox)){
+  if (sys_mbox_valid(conn->recvmbox)){
     /* @todo: should calling netconn_recv on a TCP listen conn be fatal (ERR_CONN)?? */
     /* TCP listen conns don't have a recvmbox! */
     conn->err = ERR_CONN;
@@ -331,7 +338,7 @@ netconn_recv(struct netconn *conn)
       p = NULL;
     }
 #else
-    sys_arch_mbox_fetch(&conn->recvmbox, (void *)&p, 0);
+    sys_arch_mbox_fetch(conn->recvmbox, (void *)&p, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
 
     if (p != NULL) {
@@ -376,7 +383,7 @@ netconn_recv(struct netconn *conn)
       buf = NULL;
     }
 #else
-    sys_arch_mbox_fetch(&conn->recvmbox, (void *)&buf, 0);
+    sys_arch_mbox_fetch(conn->recvmbox, (void *)&buf, 0);
 #endif /* LWIP_SO_RCVTIMEO*/
     if (buf!=NULL) {
       SYS_ARCH_DEC(conn->recv_avail, buf->p->tot_len);
@@ -531,12 +538,17 @@ netconn_gethostbyname(const char *name, struct ip_addr *addr)
 {
   struct dns_api_msg msg;
   err_t err;
-  sys_sem_t sem;
+  OS_SEM* sem = (OS_SEM*)memp_malloc(sizeof(OS_SEM));
 
   LWIP_ERROR("netconn_gethostbyname: invalid name", (name != NULL), return ERR_ARG;);
   LWIP_ERROR("netconn_gethostbyname: invalid addr", (addr != NULL), return ERR_ARG;);
 
-  sem = sys_sem_new(0);
+  if (sem == NULL) {
+    APP_TRACE_INFO(("netconn_gethostbyname: sem == NULL\n\r"));
+    return ERR_MEM;
+  }
+  
+  sys_sem_new(sem ,0);
   if (sem == SYS_SEM_NULL) {
     return ERR_MEM;
   }
@@ -550,6 +562,8 @@ netconn_gethostbyname(const char *name, struct ip_addr *addr)
   APP_TRACE_INFO(("need to fix this\n"));
   // sys_sem_wait(sem);
   sys_sem_free(sem);
+  memp_free(MEMP_SEM, sem);
+  sem = NULL;
 
   return err;
 }

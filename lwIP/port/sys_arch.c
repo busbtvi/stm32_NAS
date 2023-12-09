@@ -58,45 +58,12 @@ static char pcQueueMemoryPool[MAX_QUEUES][sizeof(TQ_DESCR) + sizeof(void*)];
 /*-----------------------------------------------------------------------------------*/
 //  Creates an empty mailbox.
 int sys_mbox_new(OS_Q* mbox, int size){
-    OS_ERR       ucErr;
+    OS_ERR err3;
       
-    OSQCreate(mbox,"LWIP quiue", size, &ucErr); 
-    LWIP_ASSERT( "OSQCreate ", ucErr == OS_ERR_NONE );
-    
-    if( ucErr == OS_ERR_NONE){ 
-        return 0; 
-    }
-    return -1;
-    // prarmeter "size" can be ignored in your implementation.
-    // u8_t       ucErr;
-    // PQ_DESCR    pQDesc;
-    // OS_ERR err3;
-    
-    // pQDesc = (PQ_DESCR) OSMemGet(&pQueueMem, &err3);
-    // LWIP_ASSERT("OSMemGet ", err3 == OS_ERR_NONE );
-    
-    // if( err3 == OS_ERR_NONE ) 
-    // {
-    //     if( size > MAX_QUEUE_ENTRIES ) // �����������MAX_QUEUE_ENTRIES��Ϣ��Ŀ
-    //         size = MAX_QUEUE_ENTRIES;
-        
-    //     // pQDesc->pQ = OSQCreate( &(pQDesc->pvQEntries[0]), size ); 
-    //     OSQCreate ((OS_Q      *)  pQDesc->pvQEntries[0],
-    //                 (CPU_CHAR  *) "sys_mbox_new",
-    //                 (OS_MSG_QTY ) size,
-    //                 (OS_ERR    *) &err3);
-    //     LWIP_ASSERT( "OSQCreate ", pQDesc->pQ != NULL );
-        
-    //     if( pQDesc->pQ != NULL ) 
-    //         return pQDesc; 
-    //     else
-    //     {
-    //         // ucErr = OSMemPut( pQueueMem, pQDesc );
-    //         OSMemPut(&pQueueMem, pQDesc , &err3);
-    //         return SYS_MBOX_NULL;
-    //     }
-    // }
-    // else return SYS_MBOX_NULL;
+    OSQCreate(mbox, "sys_mbox_new", size, &err3); 
+    APP_TRACE_INFO(("sys_mbox_new: err3 =  %d\n\r", err3));
+
+    return err3;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -105,16 +72,16 @@ int sys_mbox_new(OS_Q* mbox, int size){
   mailbox when the mailbox is deallocated, it is an indication of a
   programming error in lwIP and the developer should be notified.
 */
-void
-sys_mbox_free(OS_Q* mbox)
-{
-    OS_ERR     ucErr;
-    LWIP_ASSERT( "sys_mbox_free ", sys_mbox_valid(mbox) );      
+void sys_mbox_free(OS_Q* mbox){
+    OS_ERR err3;
         
-    OSQFlush(mbox,& ucErr);
+    OSQFlush(mbox,& err3);
+    APP_TRACE_INFO(("sys_mbox_free->OSQFlush: err3 =  %d\n\r", err3));
+
+    OSQDel(mbox, OS_OPT_DEL_ALWAYS, &err3);
+    APP_TRACE_INFO(("sys_mbox_free->OSQDel: err3 =  %d\n\r", err3));
     
-    OSQDel(mbox, OS_OPT_DEL_ALWAYS, &ucErr);
-    LWIP_ASSERT( "OSQDel ", ucErr == OS_ERR_NONE );
+    LWIP_ASSERT( "OSQDel ", err3 == OS_ERR_NONE );
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -173,8 +140,7 @@ u32_t sys_arch_mbox_fetch(OS_Q* mbox, void **msg, u32_t timeout)
     CPU_TS        ucos_timeout;  
     CPU_TS        in_timeout = (timeout * OS_CFG_TICK_RATE_HZ)/1000;
 
-    if(timeout && in_timeout == 0) in_timeout = 1;
-
+    APP_TRACE_INFO(("waiting sys_arch_mbox_fetch: mbox %p, msg %p, timeout %d\n", mbox, msg, timeout));
     *msg  = OSQPend((OS_Q       *) mbox,
                     (OS_TICK     ) in_timeout,
                     (OS_OPT      ) OS_OPT_PEND_BLOCKING,
@@ -184,6 +150,7 @@ u32_t sys_arch_mbox_fetch(OS_Q* mbox, void **msg, u32_t timeout)
 
     if ( err3 == OS_ERR_TIMEOUT ) 
         ucos_timeout = SYS_ARCH_TIMEOUT;  
+    APP_TRACE_INFO(("sys_arch_mbox_fetch: err3(if 0 = no error) = %d\n\r", err3));
     return ucos_timeout; 
 }
 
@@ -193,17 +160,18 @@ u32_t sys_arch_mbox_fetch(OS_Q* mbox, void **msg, u32_t timeout)
   * @return 1 for valid, 0 for invalid 
   */ 
 int sys_mbox_valid(OS_Q* mbox){
-    if(mbox->NamePtr)  
-        return (strcmp(mbox->NamePtr,"?Q"))? 1:0;
-    return 0;
+  return mbox != NULL;
 }
 /** 
   * Set an mbox invalid so that sys_mbox_valid returns 0 
   */      
-void sys_mbox_set_invalid(sys_mbox_t *mbox)
+void sys_mbox_set_invalid(OS_Q *mbox)
 {
-  if(sys_mbox_valid(mbox))
+  if(sys_mbox_valid(mbox)){
+    APP_TRACE_INFO(("sys_mbox_set_invalid: mbox\n\r"));
     sys_mbox_free(mbox);
+    mbox = NULL;
+  }
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -218,8 +186,10 @@ err_t sys_sem_new(OS_SEM* sem, u8_t count){
                 (OS_SEM_CTR  ) count,
                 (OS_ERR     *) &err3);
 
-    if(err3 != OS_ERR_NONE) return -1;    
-    return 0;
+    // if(err3 != OS_ERR_NONE) return -1;    
+    // return 0;
+    APP_TRACE_INFO(("sys_sem_new: err3 = %d\n\r", err3));
+    return err3;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -293,8 +263,10 @@ int sys_sem_valid(OS_SEM* sem){
 }
 /** Set a semaphore invalid so that sys_sem_valid returns 0 */
 void sys_sem_set_invalid(OS_SEM* sem){
-  if(sys_sem_valid(sem))
+  if(sys_sem_valid(sem)){
     sys_sem_free(sem);
+    sem = NULL;
+  }
 }
 
 /*-----------------------------------------------------------------------------------*/
