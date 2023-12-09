@@ -234,6 +234,18 @@ typedef struct  {
   uint32_t   Buffer2NextDescAddr;   /*!< Buffer2 or next descriptor address pointer */
 } ETH_DMADESCTypeDef;
 
+typedef struct{
+  u32 length;
+  u32 buffer;
+  ETH_DMADESCTypeDef *descriptor;
+}FrameTypeDef;
+
+typedef struct  {
+  __IO ETH_DMADESCTypeDef *FS_Rx_Desc;          /*!< First Segment Rx Desc */
+  __IO ETH_DMADESCTypeDef *LS_Rx_Desc;          /*!< Last Segment Rx Desc */
+  __IO uint32_t  Seg_Count;                     /*!< Segment count */
+} ETH_DMA_Rx_Frame_infos;
+
 /**
   * @}
   */
@@ -273,6 +285,35 @@ typedef struct  {
 #define MIN_ETH_PAYLOAD          46    /*!< Minimum Ethernet payload size */
 #define MAX_ETH_PAYLOAD        1500    /*!< Maximum Ethernet payload size */
 #define JUMBO_FRAME_PAYLOAD    9000    /*!< Jumbo frame payload size */      
+
+
+/* Here we configure each Ethernet driver receive buffer to fit the Max size Ethernet
+   packet */    
+#ifndef ETH_RX_BUF_SIZE
+ #define ETH_RX_BUF_SIZE         ETH_MAX_PACKET_SIZE 
+#endif
+/* 5 Ethernet driver receive buffers are used (in a chained linked list)*/ 
+#ifndef ETH_RXBUFNB
+ #define ETH_RXBUFNB             5     /*  5 Rx buffers of size ETH_RX_BUF_SIZE */
+#endif
+
+#ifndef ETH_TX_BUF_SIZE 
+ #define ETH_TX_BUF_SIZE         ETH_MAX_PACKET_SIZE
+#endif
+/* 5 ethernet driver transmit buffers are used (in a chained linked list)*/ 
+#ifndef ETH_TXBUFNB
+ #define ETH_TXBUFNB             5      /* 5  Tx buffers of size ETH_TX_BUF_SIZE */
+#endif
+
+
+/* Define those to better describe your network interface. */
+#define IFNAME0 's'
+#define IFNAME1 't'
+
+#define  ETH_DMARxDesc_FrameLengthShift           16
+#define  ETH_ERROR              ((u32)0)
+#define  ETH_SUCCESS            ((u32)1)
+
 
 /**--------------------------------------------------------------------------**/
 /** 

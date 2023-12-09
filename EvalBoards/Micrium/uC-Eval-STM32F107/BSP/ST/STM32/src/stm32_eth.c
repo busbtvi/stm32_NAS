@@ -78,9 +78,6 @@ ETH_DMADESCTypeDef  *DMAPTPRxDescToGet;
 /* ETHERNET DMA Rx descriptors Buffer2 Size Shift */
 #define  ETH_DMARXDESC_BUFFER2_SIZESHIFT           16
 
-/* ETHERNET errors */
-#define  ETH_ERROR              ((uint32_t)0)
-#define  ETH_SUCCESS            ((uint32_t)1)
 /**
   * @}
   */

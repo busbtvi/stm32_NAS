@@ -64,8 +64,9 @@ tcpecho_thread(void *arg)
   while (1) {
 
     /* Grab new connection. */
+    APP_TRACE_INFO(("wait new connection\n\r"));
     newconn = netconn_accept(conn);
-    printf("accepted new connection %p\n", newconn);
+    APP_TRACE_INFO(("accepted new connection %p\n", newconn));
     /* Process the new connection. */
     if (newconn != NULL) {
       struct netbuf *buf;

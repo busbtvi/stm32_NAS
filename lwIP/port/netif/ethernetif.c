@@ -62,13 +62,6 @@
 /* TCP and ARP timeouts */
 volatile int tcp_end_time, arp_end_time;
 
-/* Define those to better describe your network interface. */
-#define IFNAME0 's'
-#define IFNAME1 't'
-
-#define  ETH_DMARxDesc_FrameLengthShift           16
-#define  ETH_ERROR              ((u32)0)
-#define  ETH_SUCCESS            ((u32)1)
 
 /**
  * Helper struct to hold private data used to operate your ethernet interface.
@@ -87,8 +80,6 @@ struct ethernetif ethernetif_init_struct;
 /* Forward declarations. */
 err_t  ethernetif_input(struct netif *netif);
 
-#define ETH_RXBUFNB        4    // DMA���ջ�������Ŀ
-#define ETH_TXBUFNB        2    // DMA���ͻ�������Ŀ
 
 uint8_t MACaddr[6];
 ETH_DMADESCTypeDef  DMARxDscrTab[ETH_RXBUFNB], DMATxDscrTab[ETH_TXBUFNB];/* Ethernet Rx & Tx DMA Descriptors */
@@ -102,11 +93,6 @@ extern struct netif netif;
 //sys_sem_t tx_sem;
 //sys_sem_t rx_sem;
 
-typedef struct{
-u32 length;
-u32 buffer;
-ETH_DMADESCTypeDef *descriptor;
-}FrameTypeDef;
 
 FrameTypeDef ETH_RxPkt_ChainMode(void);
 u32 ETH_GetCurrentTxBuffer(void);
@@ -164,7 +150,8 @@ low_level_init(struct netif *netif)
   netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP;
 
   SYS_ARCH_PROTECT(sr);
-  
+  /* Configure the GPIO ports */
+  ETH_BSP_Config();
   /* Initialize Tx Descriptors list: Chain Mode */
   ETH_DMATxDescChainInit(DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
   /* Initialize Rx Descriptors list: Chain Mode  */
@@ -349,7 +336,7 @@ err_t
 ethernetif_init(struct netif *netif)
 {
   struct ethernetif *ethernetif;
-
+  APP_TRACE_INFO(("ethernetif_init\n\r"));
   LWIP_ASSERT("netif != NULL", (netif != NULL));
 
   // ethernetif = mem_malloc(sizeof(struct ethernetif));

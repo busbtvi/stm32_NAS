@@ -79,6 +79,7 @@
 #include  <bsp_ser.h>
 #include  <bsp_i2c.h>
 #include  <bsp_stlm75.h>
+#include  <bsp_eth.h>
 
 
 /*
@@ -271,6 +272,11 @@
 #define  BSP_PERIPH_ID_OTGFS                              12
 #define  BSP_PERIPH_ID_ETHMAC                             14
 #define  BSP_PERIPH_ID_ETHMACTX                           15
+
+#define  BSP_PERIPH_ID_ETH                                25
+#define  BSP_PERIPH_ID_ETH_TX                             26
+#define  BSP_PERIPH_ID_ETH_RX                             27
+#define  BSP_PERIPH_ID_ETH_PTP                            28
 
 #define  BSP_PERIPH_ID_AFIO                               32
 #define  BSP_PERIPH_ID_IOPA                               34

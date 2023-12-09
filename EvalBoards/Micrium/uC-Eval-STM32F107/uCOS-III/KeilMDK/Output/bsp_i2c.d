@@ -21,6 +21,7 @@
   ..\..\BSP\ST\STM32\inc\stm32f10x_flash.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_fsmc.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_gpio.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_i2c.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_iwdg.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_nvic.h \
@@ -36,4 +37,5 @@
   ..\..\BSP\OS\uCOS-III\bsp_os.h ..\..\..\..\..\uCOS-III\Source\os.h \
   ..\..\uCOS-III\os_cfg.h ..\..\..\..\..\uCOS-III\Source\os_type.h \
   ..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView\os_cpu.h \
-  ..\..\BSP\bsp_ser.h ..\..\BSP\bsp_i2c.h ..\..\BSP\bsp_stlm75.h
+  ..\..\BSP\bsp_ser.h ..\..\BSP\bsp_i2c.h ..\..\BSP\bsp_stlm75.h \
+  ..\..\BSP\bsp_eth.h ..\..\BSP\ST\STM32\inc\stm32_eth.h

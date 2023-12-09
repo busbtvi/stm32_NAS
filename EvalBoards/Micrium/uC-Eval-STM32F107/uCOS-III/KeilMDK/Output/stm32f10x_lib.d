@@ -14,6 +14,7 @@
   ..\..\BSP\ST\STM32\inc\stm32f10x_flash.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_fsmc.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_gpio.h \
+  D:\Program\ Files\Keil_v5\ARM\ARMCLANG\Bin\..\include\stdint.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_i2c.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_iwdg.h \
   ..\..\BSP\ST\STM32\inc\stm32f10x_nvic.h \
