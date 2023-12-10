@@ -37,6 +37,7 @@
 
 #include <includes.h>
 #include "bsp_ser.h"
+// #include <string.h>
 
 /*
 *********************************************************************************************************
@@ -51,7 +52,7 @@ int isTest = 0;
 typedef struct _linkedList {
 	struct _linkedList *next;
 	int len;
-	u16 words[10];
+	char words[10];
 } linkedList;
 linkedList *head = NULL, *cur = NULL;
 
@@ -79,7 +80,6 @@ static OS_FLAG_GRP sensorsFLAG;
 */
 
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
-static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
 static  CPU_STK  cliSTK[APP_TASK_FIRST_STK_SIZE];
 static  CPU_STK  volcanoDetectHandlerSTK[256];
 
@@ -100,7 +100,6 @@ static void volcanoDetectHandlerTask();
 
 // TASK functions
 static void AppTaskStart  (void *p_arg);
-static void AppTaskFirst  (void *p_arg);
 static void cliTask();
 
 // Linked List functions
@@ -244,20 +243,6 @@ static  void  AppTaskCreate (void)
 {
 	OS_ERR  err;
 	
-	// OSTaskCreate((OS_TCB     *)&AppTaskFirstTCB, 
-	// 			(CPU_CHAR   *)"App First Start",
-	// 			(OS_TASK_PTR )AppTaskFirst,
-	// 			(void       *)0,
-	// 			(OS_PRIO     )APP_TASK_FIRST_PRIO,
-	// 			(CPU_STK    *)&AppTaskFirstStk[0],
-	// 			(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-	// 			(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-	// 			(OS_MSG_QTY  )0,
-	// 			(OS_TICK     )0,
-	// 			(void       *)0,
-	// 			(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-	// 			(OS_ERR     *)&err);
-	
 	OSTaskCreate((OS_TCB     *) &cliTCB, 
 				(CPU_CHAR   *) "cli",
 				(OS_TASK_PTR ) cliTask,
@@ -380,28 +365,13 @@ static void deleteNode(){
 *********************************************************************************************************
 */
 
-static void AppTaskFirst (void *p_arg) {
-	OS_ERR err;
-	while (DEF_TRUE) {
-		OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_HMSM_STRICT, &err);
-		BSP_LED_Toggle(1);
-		//      4294967295
-		// int i = 1000000000, j = 0;
-		// for(j=0; j<9; j++){
-		// 	USART_SendData(USART2, (u16)(ADC_Value/i + '0'));
-		// 	while ((USART2->SR & USART_SR_TC) == 0);
-		// 	i = i/10;
-		// }
-		// USART_SendData(USART2, '\n');
-		// while ((USART2->SR & USART_SR_TC) == 0);
-		// USART_SendData(USART2, '\r');
-		// while ((USART2->SR & USART_SR_TC) == 0);
-	}
-}
 static void cliTask(){
 	OS_MSG_SIZE msgSize;
 	OS_ERR err;
 	linkedList *node;
+
+	int cmpResult;
+	char* cli = "test";
 
 	while(DEF_TRUE){
 		APP_TRACE_INFO(("Enter Command : "));
@@ -423,10 +393,17 @@ static void cliTask(){
 		while ((USART2->SR & USART_SR_TC) == 0);
 		
 		while(node != NULL){
-			for(int i=0; i<node->len; i++){
-				USART_SendData(USART2, node->words[i]);
-				while ((USART2->SR & USART_SR_TC) == 0);
-			}
+			// for(int i=0; i<node->len; i++){
+			// 	USART_SendData(USART2, node->words[i]);
+			// 	while ((USART2->SR & USART_SR_TC) == 0);
+			// }
+
+			cmpResult = strncmp(cli, node->words, (node->len - 1));
+
+			if(cmpResult == 0) USART_SendData(USART2, '0');
+			else USART_SendData(USART2, '1');
+			while ((USART2->SR & USART_SR_TC) == 0);
+
 			node = node->next;
 		}
 		USART_SendData(USART2, '\n');
@@ -453,7 +430,7 @@ static void usart2Handler(){
 		else{
 			if(cur == NULL || cur->len == 10) addNode();
 
-			cur->words[cur->len++] = word;
+			cur->words[cur->len++] = (char)word;
 			USART_SendData(USART2, word);
 		}
 
