@@ -27,10 +27,14 @@ Project File Date:  12/10/2023
 <h2>Output:</h2>
 *** Using Compiler 'V6.19', folder: 'D:\Program Files\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'FLASH'
+../app.c(426): warning: GCC does not allow variable declarations in for loop initializers before C99 [-Wgcc-compat]
+                        for(int i=0; i<node->len; i++){
+                            ^
+1 warning generated.
 compiling app.c...
 linking...
-Program Size: Code=54864 RO-data=972 RW-data=0 ZI-data=15592  
-".\Output\OS.axf" - 0 Error(s), 0 Warning(s).
+Program Size: Code=55040 RO-data=972 RW-data=0 ZI-data=11560  
+".\Output\OS.axf" - 0 Error(s), 1 Warning(s).
 Build Time Elapsed:  00:00:01
 </pre>
 </body>

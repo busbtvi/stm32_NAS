@@ -42,6 +42,7 @@
 
 #define  BSP_SER_MODULE
 #include <bsp.h>
+#include "bsp_ser.h"
 
 
 /*
@@ -78,8 +79,10 @@
 *********************************************************************************************************
 */
 
-static  BSP_OS_SEM   BSP_SerTxWait;
-static  BSP_OS_SEM   BSP_SerRxWait;
+// static  BSP_OS_SEM   BSP_SerTxWait;
+// static  BSP_OS_SEM   BSP_SerRxWait;
+BSP_OS_SEM   BSP_SerTxWait;
+BSP_OS_SEM   BSP_SerRxWait;
 static  BSP_OS_SEM   BSP_SerLock;
 static  CPU_INT08U   BSP_SerRxData;
 
@@ -194,8 +197,8 @@ void  BSP_Ser_Init (CPU_INT32U  baud_rate)
         tc_status = USART_GetFlagStatus(USART2, USART_FLAG_TC);        
     }
            
-    BSP_IntVectSet(BSP_INT_ID_USART2, BSP_Ser_ISR_Handler);
-    BSP_IntEn(BSP_INT_ID_USART2);
+    // BSP_IntVectSet(BSP_INT_ID_USART2, BSP_Ser_ISR_Handler);
+    // BSP_IntEn(BSP_INT_ID_USART2);
 }
 
 

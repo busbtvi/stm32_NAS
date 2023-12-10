@@ -36,7 +36,7 @@
 */
 
 #include <includes.h>
-
+#include "bsp_ser.h"
 
 /*
 *********************************************************************************************************
@@ -46,16 +46,24 @@
 
 volatile CPU_INT32U ADC_Value;
 
+int isTest = 0;
+
+typedef struct _linkedList {
+	struct _linkedList *next;
+	int len;
+	u16 words[10];
+} linkedList;
+linkedList *head = NULL, *cur = NULL;
+
 /*
 *********************************************************************************************************
 *                                              OS Objects
 *********************************************************************************************************
 */
 
+static int memPoolCnt = MemPool_Size;
 static OS_MEM MemPool;
-static char memPoolStorage[MemPool_Size][1000];
-
-static OS_SEM memPoolSem;
+static char memPoolStorage[MemPool_Size][100];
 
 static OS_TCB AppTaskStartTCB;
 static OS_TCB AppTaskFirstTCB;
@@ -84,14 +92,20 @@ static  CPU_STK  volcanoDetectHandlerSTK[256];
 
 static  void  AppTaskCreate (void);
 static  OS_ERR AppObjCreate  (void);
-static  void  AppTaskStart  (void *p_arg);
 static void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler);
+static void UsartConfig();
 static void ActionDetectISR();
+static void usart2Handler();
 static void volcanoDetectHandlerTask();
 
 // TASK functions
+static void AppTaskStart  (void *p_arg);
 static void AppTaskFirst  (void *p_arg);
 static void cliTask();
+
+// Linked List functions
+static void addNode();
+static void deleteNode();
 
 /*
 *********************************************************************************************************
@@ -168,6 +182,14 @@ static  void  AppTaskStart (void *p_arg)
     OS_CPU_SysTickInit(cnts);                                   /* Init uC/OS periodic time src (SysTick).              */
 
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
+
+    AppObjCreate();                                             /* Create Application Objects                           */
+
+	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
+		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
+	#endif
+
+	UsartConfig();
 	SensorConfig(
 		RCC_APB2Periph_GPIOC,
 		GPIO_Pin_4,
@@ -193,8 +215,6 @@ static  void  AppTaskStart (void *p_arg)
 		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
 	#endif
     
-    APP_TRACE_INFO(("Creating Application Object...\n\r"));
-    AppObjCreate();                                             /* Create Application Objects                           */
 
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
@@ -224,33 +244,33 @@ static  void  AppTaskCreate (void)
 {
 	OS_ERR  err;
 	
-	OSTaskCreate((OS_TCB     *)&AppTaskFirstTCB, 
-				(CPU_CHAR   *)"App First Start",
-				(OS_TASK_PTR )AppTaskFirst,
-				(void       *)0,
-				(OS_PRIO     )APP_TASK_FIRST_PRIO,
-				(CPU_STK    *)&AppTaskFirstStk[0],
-				(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-				(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-				(OS_MSG_QTY  )0,
-				(OS_TICK     )0,
-				(void       *)0,
-				(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-				(OS_ERR     *)&err);
-	
-	// OSTaskCreate((OS_TCB     *) &cliTCB, 
-	// 			(CPU_CHAR   *) "cli",
-	// 			(OS_TASK_PTR ) cliTask,
-	// 			(void       *) 0,
-	// 			(OS_PRIO     ) 10,  // 적당히 낮게 설정한거(화산 감지보단 낮아야 하니)
-	// 			(CPU_STK    *) &cliSTK[0],
-	// 			(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE / 10,
-	// 			(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE,
+	// OSTaskCreate((OS_TCB     *)&AppTaskFirstTCB, 
+	// 			(CPU_CHAR   *)"App First Start",
+	// 			(OS_TASK_PTR )AppTaskFirst,
+	// 			(void       *)0,
+	// 			(OS_PRIO     )APP_TASK_FIRST_PRIO,
+	// 			(CPU_STK    *)&AppTaskFirstStk[0],
+	// 			(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
+	// 			(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
 	// 			(OS_MSG_QTY  )0,
 	// 			(OS_TICK     )0,
 	// 			(void       *)0,
-	// 			(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-	// 			(OS_ERR     *) &err);
+	// 			(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+	// 			(OS_ERR     *)&err);
+	
+	OSTaskCreate((OS_TCB     *) &cliTCB, 
+				(CPU_CHAR   *) "cli",
+				(OS_TASK_PTR ) cliTask,
+				(void       *) 0,
+				(OS_PRIO     ) 10,  // 적당히 낮게 설정한거(화산 감지보단 낮아야 하니)
+				(CPU_STK    *) &cliSTK[0],
+				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE / 10,
+				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE,
+				(OS_MSG_QTY  )0,
+				(OS_TICK     )0,
+				(void       *)0,
+				(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+				(OS_ERR     *) &err);
 
 	OSTaskCreate((OS_TCB     *) &volcanoDetectHandlerTCB, 
 				(CPU_CHAR   *) "volcanoDetectHandler",
@@ -291,11 +311,11 @@ static OS_ERR AppObjCreate (){
 				(OS_ERR		*) &err);
 	if(err != OS_ERR_NONE) return err;
 
-	OSSemCreate((OS_SEM		*) &memPoolSem,
-				(CPU_CHAR	*) "MemPoolSem",
-				(OS_SEM_CTR	 ) MemPool_Size,
-				(OS_ERR		*) &err);
-	if(err != OS_ERR_NONE) return err;
+	// OSSemCreate((OS_SEM		*) &memPoolSem,
+	// 			(CPU_CHAR	*) "MemPoolSem",
+	// 			(OS_SEM_CTR	 ) MemPool_Size,
+	// 			(OS_ERR		*) &err);
+	// if(err != OS_ERR_NONE) return err;
 
 	OSFlagCreate((OS_FLAG_GRP*) &sensorsFLAG,
 				(CPU_CHAR	 *) "SensorsFlag",
@@ -304,6 +324,54 @@ static OS_ERR AppObjCreate (){
 
 	return err;
 }
+
+
+/*
+*********************************************************************************************************
+*                                      Linked List Functions
+*********************************************************************************************************
+*/
+
+static void addNode(){
+	OS_ERR err;
+	linkedList *newNode = OSMemGet((OS_MEM*) &MemPool, &err);
+	if(err != OS_ERR_NONE){
+		APP_TRACE_INFO(("MemPool is full\n\r"));
+	}
+
+	newNode->next = NULL;
+	newNode->len = 0;
+
+	if(head != NULL) cur->next = newNode;
+	else head = newNode;
+
+	cur = newNode;
+}
+static void deleteNode(){
+	OS_ERR err;
+	linkedList* del;
+
+	while(head != NULL){
+		del = head;
+		head = head->next;
+
+		OSMemPut((OS_MEM*) &MemPool, del, &err);
+		if(err != OS_ERR_NONE){
+			APP_TRACE_INFO(("MemPool is empty\n\r"));
+			return;
+		}
+	}
+
+	cur = NULL;
+	head = NULL;
+}
+
+/*
+*********************************************************************************************************
+*                                      Handler Functions
+*********************************************************************************************************
+*/
+
 
 
 /*
@@ -331,10 +399,73 @@ static void AppTaskFirst (void *p_arg) {
 	}
 }
 static void cliTask(){
+	OS_MSG_SIZE msgSize;
 	OS_ERR err;
+	linkedList *node;
+
 	while(DEF_TRUE){
-		OSTimeDlyHMSM(0, 0, 20, 0, OS_OPT_TIME_HMSM_STRICT, &err);
+		APP_TRACE_INFO(("Enter Command : "));
+		node = OSTaskQPend((OS_TICK	 ) 0,
+							(OS_OPT		 ) OS_OPT_PEND_BLOCKING,
+							(OS_MSG_SIZE*) &msgSize,
+							(CPU_TS		*) NULL,
+							(OS_ERR		*) &err);
+		
+		if(err != OS_ERR_NONE){
+			APP_TRACE_INFO(("OSTaskQPend Error\n\r"));
+			continue;
+		}
+
 		// todo : cli 내용 여기에
+		USART_SendData(USART2, '\n');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		USART_SendData(USART2, '\r');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		
+		while(node != NULL){
+			for(int i=0; i<node->len; i++){
+				USART_SendData(USART2, node->words[i]);
+				while ((USART2->SR & USART_SR_TC) == 0);
+			}
+			node = node->next;
+		}
+		USART_SendData(USART2, '\n');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		USART_SendData(USART2, '\r');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		deleteNode();
+	}
+}
+static void usart2Handler(){
+	OS_ERR err;
+	u16 word;
+
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET){
+		word = USART_ReceiveData(USART2) & 0xFF;
+		
+		if(word == '_'){
+			OSTaskQPost((OS_TCB		*) &cliTCB,
+						(void		*) head,
+						(OS_MSG_SIZE ) 0,
+						(OS_OPT		) OS_OPT_POST_FIFO,
+						(OS_ERR		*) NULL);
+		}
+		else{
+			if(cur == NULL || cur->len == 10) addNode();
+
+			cur->words[cur->len++] = word;
+			USART_SendData(USART2, word);
+		}
+
+		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		BSP_OS_SemPost(&BSP_SerRxWait);
+	}
+	
+	FlagStatus tc_status = USART_GetFlagStatus(USART2, USART_FLAG_TC);
+	if (tc_status == SET) {
+		USART_ITConfig(USART2, USART_IT_TC, DISABLE);
+		USART_ClearITPendingBit(USART2, USART_IT_TC);           /* Clear the USART2 receive interrupt.                */
+		BSP_OS_SemPost(&BSP_SerTxWait);                         /* Post to the semaphore                              */
 	}
 }
 static void volcanoDetectHandlerTask(){
@@ -416,4 +547,21 @@ void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_
 	// Interrupt Handler
 	BSP_IntVectSet(int_id, handler);
     BSP_IntEn(int_id);
+}
+void UsartConfig(){
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+
+   	USART_Cmd(USART2, ENABLE);
+    USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+	
+	NVIC_InitTypeDef nvic = {
+		.NVIC_IRQChannel = USART2_IRQChannel,
+		.NVIC_IRQChannelPreemptionPriority = 0x01,
+		.NVIC_IRQChannelSubPriority = 0x01,
+		.NVIC_IRQChannelCmd = ENABLE
+	};
+    NVIC_Init(&nvic);
+
+	BSP_IntVectSet(BSP_INT_ID_USART2, usart2Handler);
+	BSP_IntEn(BSP_INT_ID_USART2);
 }

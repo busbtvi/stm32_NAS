@@ -96,4 +96,4 @@
 #define APP_TASK_START_STK_SIZE		128
 #define APP_TASK_FIRST_STK_SIZE		128
 
-#define MemPool_Size 5
+#define MemPool_Size 10

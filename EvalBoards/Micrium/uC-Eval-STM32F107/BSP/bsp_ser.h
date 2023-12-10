@@ -155,3 +155,6 @@ void        BSP_Ser_Printf(CPU_CHAR    *format,
 */
 
 #endif                                                          /* End of BSP ser module include.                       */
+
+extern BSP_OS_SEM   BSP_SerRxWait;
+extern BSP_OS_SEM   BSP_SerTxWait;
