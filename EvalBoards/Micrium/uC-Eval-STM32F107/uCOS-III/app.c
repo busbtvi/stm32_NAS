@@ -44,11 +44,7 @@
 *********************************************************************************************************
 */
 
-#define TASK_FIRST_RR_TIME_QUANTA 1000
-#define TASK_SECOND_RR_TIME_QUANTA 2000
-#define TASK_THIRD_RR_TIME_QUANTA 500
-
-#define TASK_COUNT_PERIOD  1000000
+volatile CPU_INT32U ADC_Value;
 
 /*
 *********************************************************************************************************
@@ -62,7 +58,6 @@ static OS_SEM memPoolSem;
 
 static OS_TCB AppTaskStartTCB;
 static OS_TCB AppTaskFirstTCB;
-static OS_TCB SDCardTaskTCB;
 
 /*
 *********************************************************************************************************
@@ -72,8 +67,6 @@ static OS_TCB SDCardTaskTCB;
 
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
 static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
-
-static CPU_STK SDCardTaskSTK[APP_TASK_FIRST_STK_SIZE];
 
 
 /*
@@ -85,10 +78,10 @@ static CPU_STK SDCardTaskSTK[APP_TASK_FIRST_STK_SIZE];
 static  void  AppTaskCreate (void);
 static  OS_ERR AppObjCreate  (void);
 static  void  AppTaskStart  (void *p_arg);
-
 static  void  AppTaskFirst  (void *p_arg);
-static void SDCardTask();
 
+static void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler);
+void EXTI4_handler();
 
 /*
 *********************************************************************************************************
@@ -167,6 +160,16 @@ static  void  AppTaskStart (void *p_arg)
     OS_CPU_SysTickInit(cnts);                                   /* Init uC/OS periodic time src (SysTick).              */
 
     Mem_Init();                                                 /* Initialize Memory Management Module                  */
+	SensorConfig(
+		RCC_APB2Periph_GPIOC,
+		GPIO_Pin_4,
+		GPIO_PortSourceGPIOC,
+		GPIO_PinSource4,
+		EXTI_Line4,
+		EXTI4_IRQChannel,
+		BSP_INT_ID_EXTI4,
+		(void*)EXTI4_handler
+	);
 
 	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
 		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
@@ -178,11 +181,12 @@ static  void  AppTaskStart (void *p_arg)
     APP_TRACE_INFO(("Creating Application Object...\n\r"));
     AppObjCreate();                                             /* Create Application Objects                           */
     
-    BSP_LED_On(0); // "Set the bit" turns off the LED (STM32F107VC board)
+    BSP_LED_On(1); // "Set the bit" turns off the LED (STM32F107VC board)
     while (DEF_TRUE) {                                          /* Task body, always written as an infinite loop.       */
-        OSTimeDlyHMSM(0, 0, 0, 100,
+        OSTimeDlyHMSM(0, 0, 1, 0,
                       OS_OPT_TIME_HMSM_STRICT,
                       &err);
+		BSP_LED_Toggle(1);
     }
 }
 
@@ -204,32 +208,18 @@ static  void  AppTaskCreate (void)
 	OS_ERR  err;
 	
 	OSTaskCreate((OS_TCB     *)&AppTaskFirstTCB, 
-							 (CPU_CHAR   *)"App First Start",
-							 (OS_TASK_PTR )AppTaskFirst,
-							 (void       *)0,
-							 (OS_PRIO     )APP_TASK_FIRST_PRIO,
-							 (CPU_STK    *)&AppTaskFirstStk[0],
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
-							 (CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
-							 (OS_MSG_QTY  )0,
-							 (OS_TICK     )TASK_FIRST_RR_TIME_QUANTA,
-							 (void       *)0,
-							 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-							 (OS_ERR     *)&err);
-
-	OSTaskCreate((OS_TCB     *) &SDCardTaskTCB, 
-				(CPU_CHAR   *)"SDCard Task",
-				(OS_TASK_PTR ) SDCardTask,
-				(void       *) 0,
-				(OS_PRIO     ) APP_TASK_FIRST_PRIO + 1,
-				(CPU_STK    *) &SDCardTaskSTK[0],
-				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE / 10,
-				(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE,
-				(OS_MSG_QTY  ) 0,
-				(OS_TICK     ) 0,
-				(void       *) 0,
-				(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-				(OS_ERR     *) &err);
+				(CPU_CHAR   *)"App First Start",
+				(OS_TASK_PTR )AppTaskFirst,
+				(void       *)0,
+				(OS_PRIO     )APP_TASK_FIRST_PRIO,
+				(CPU_STK    *)&AppTaskFirstStk[0],
+				(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE / 10,
+				(CPU_STK_SIZE)APP_TASK_FIRST_STK_SIZE,
+				(OS_MSG_QTY  )0,
+				(OS_TICK     )0,
+				(void       *)0,
+				(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+				(OS_ERR     *)&err);
 }
 
 
@@ -260,7 +250,7 @@ static OS_ERR AppObjCreate (){
 				(CPU_CHAR	*) "MemPoolSem",
 				(OS_SEM_CTR	 ) MemPool_Size,
 				(OS_ERR		*) &err);
-	if(err != OS_ERR_NONE) return err;
+	return err;
 }
 
 
@@ -271,18 +261,70 @@ static OS_ERR AppObjCreate (){
 */
 
 static void AppTaskFirst (void *p_arg) {
-	OS_ERR      err;
-	
-	int taskFirstCount = 0;
+	OS_ERR err;
+	u16 temp;
 	while (DEF_TRUE) {
-		taskFirstCount++;
-		if (taskFirstCount % TASK_COUNT_PERIOD == 0) {
-			BSP_LED_Toggle(1);
-			USART_SendData(USART2, '*');
+		BSP_LED_Toggle(2);
+		OSTimeDlyHMSM(0, 0, 3, 0,
+					OS_OPT_TIME_HMSM_STRICT,
+					&err);
+
+		// USART_SendData(USART2, ADC_Value);
+		//      4294967295
+		int i = 1000000000, j = 0;
+		for(j=0; j<9; j++){
+			USART_SendData(USART2, (u16)(ADC_Value/i + '0'));
+			while ((USART2->SR & USART_SR_TC) == 0);
+			i = i/10;
 		}
+		// USART_SendData(USART2, (u16)(ADC_Value & 0xffff));
+		// USART_SendData(USART2, '*');
+		USART_SendData(USART2, '\n');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		USART_SendData(USART2, '\r');
+		while ((USART2->SR & USART_SR_TC) == 0);
+		// USART_SendData(USART2, '\r');
 	}
 }
+void EXTI4_handler(){
+	if(EXTI_GetITStatus(EXTI_Line4) != RESET){
+		BSP_LED_Toggle(3);
+		USART_SendData(USART2, '*');
+		
+		EXTI_ClearITPendingBit(EXTI_Line4);
+	}
+}
+void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler){
+	// RCC
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph, ENABLE);
 
-static void SDCardTask(){
-	
+	// GPIO
+	GPIO_InitTypeDef button1_gpio = {
+		.GPIO_Pin = GPIO_Pin,
+		.GPIO_Mode = GPIO_Mode_IPU,
+	};
+	GPIO_Init(GPIOC, &button1_gpio);
+
+	// EXTI
+	GPIO_EXTILineConfig(GPIO_PortSource, GPIO_PinSource);
+	EXTI_InitTypeDef button1_exti = {
+		.EXTI_Line = EXTI_Line,
+		.EXTI_Mode = EXTI_Mode_Interrupt,
+		.EXTI_Trigger = EXTI_Trigger_Rising_Falling,
+		.EXTI_LineCmd = ENABLE
+	};
+	EXTI_Init(&button1_exti);
+
+	// NVIC
+	NVIC_InitTypeDef button1_nvic = {
+		.NVIC_IRQChannel = NVIC_IRQChannel,
+		.NVIC_IRQChannelPreemptionPriority = 0x00,
+		.NVIC_IRQChannelSubPriority = 0x00,
+		.NVIC_IRQChannelCmd = ENABLE
+	};
+
+	// Interrupt Handler
+	BSP_IntVectSet(int_id, handler);
+    BSP_IntEn(int_id);
 }
