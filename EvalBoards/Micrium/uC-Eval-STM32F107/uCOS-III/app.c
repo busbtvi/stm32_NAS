@@ -37,7 +37,6 @@
 
 #include <includes.h>
 #include "bsp_ser.h"
-// #include <string.h>
 
 /*
 *********************************************************************************************************
@@ -47,7 +46,7 @@
 
 volatile CPU_INT32U ADC_Value;
 
-int isTest = 0;
+int isTest = 0, isOff = 0;
 
 typedef struct _linkedList {
 	struct _linkedList *next;
@@ -70,6 +69,7 @@ static OS_TCB AppTaskStartTCB;
 static OS_TCB AppTaskFirstTCB;
 static OS_TCB cliTCB;
 static OS_TCB volcanoDetectHandlerTCB;
+static OS_TCB messageTCB;
 
 static OS_FLAG_GRP sensorsFLAG;
 
@@ -82,6 +82,7 @@ static OS_FLAG_GRP sensorsFLAG;
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
 static  CPU_STK  cliSTK[APP_TASK_FIRST_STK_SIZE];
 static  CPU_STK  volcanoDetectHandlerSTK[256];
+static  CPU_STK  messageSTK[256];
 
 
 /*
@@ -101,6 +102,7 @@ static void volcanoDetectHandlerTask();
 // TASK functions
 static void AppTaskStart  (void *p_arg);
 static void cliTask();
+static void MessageTask();
 
 // Linked List functions
 static void addNode();
@@ -209,6 +211,26 @@ static  void  AppTaskStart (void *p_arg)
 		BSP_INT_ID_EXTI15_10,
 		(CPU_FNCT_VOID) ActionDetectISR
 	);
+	SensorConfig(
+		RCC_APB2Periph_GPIOC,
+		GPIO_Pin_13,
+		GPIO_PortSourceGPIOC,
+		GPIO_PinSource13,
+		EXTI_Line13,
+		EXTI15_10_IRQChannel,
+		BSP_INT_ID_EXTI15_10,
+		(CPU_FNCT_VOID) ActionDetectISR
+	);
+	SensorConfig(
+		RCC_APB2Periph_GPIOA,
+		GPIO_Pin_0,
+		GPIO_PortSourceGPIOA,
+		GPIO_PinSource0,
+		EXTI_Line0,
+		EXTI0_IRQChannel,
+		BSP_INT_ID_EXTI0,
+		(CPU_FNCT_VOID) ActionDetectISR
+	);
 
 	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
 		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
@@ -263,6 +285,19 @@ static  void  AppTaskCreate (void)
 				(void       *) 0,
 				(OS_PRIO     ) APP_TASK_FIRST_PRIO,
 				(CPU_STK    *) &volcanoDetectHandlerSTK[0],
+				(CPU_STK_SIZE) 256 / 10,
+				(CPU_STK_SIZE) 256,
+				(OS_MSG_QTY  )0,
+				(OS_TICK     )0,
+				(void       *)0,
+				(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+				(OS_ERR     *) &err);
+	OSTaskCreate((OS_TCB     *) &messageTCB, 
+				(CPU_CHAR   *) "message",
+				(OS_TASK_PTR ) MessageTask,
+				(void       *) 0,
+				(OS_PRIO     ) 20,
+				(CPU_STK    *) &messageSTK[0],
 				(CPU_STK_SIZE) 256 / 10,
 				(CPU_STK_SIZE) 256,
 				(OS_MSG_QTY  )0,
@@ -361,7 +396,7 @@ static void deleteNode(){
 
 /*
 *********************************************************************************************************
-*                                      AppTaskFirst()
+*                                      Task Functions
 *********************************************************************************************************
 */
 
@@ -371,7 +406,7 @@ static void cliTask(){
 	linkedList *node;
 
 	int cmpResult;
-	char* cli = "test";
+	char* test = "test", *reset = "reset";
 
 	while(DEF_TRUE){
 		APP_TRACE_INFO(("Enter Command : "));
@@ -386,30 +421,27 @@ static void cliTask(){
 			continue;
 		}
 
-		// todo : cli 내용 여기에
-		USART_SendData(USART2, '\n');
-		while ((USART2->SR & USART_SR_TC) == 0);
-		USART_SendData(USART2, '\r');
-		while ((USART2->SR & USART_SR_TC) == 0);
-		
 		while(node != NULL){
 			// for(int i=0; i<node->len; i++){
 			// 	USART_SendData(USART2, node->words[i]);
 			// 	while ((USART2->SR & USART_SR_TC) == 0);
 			// }
 
-			cmpResult = strncmp(cli, node->words, (node->len - 1));
-
-			if(cmpResult == 0) USART_SendData(USART2, '0');
-			else USART_SendData(USART2, '1');
-			while ((USART2->SR & USART_SR_TC) == 0);
-
+			cmpResult = strncmp(test, node->words, 4);
+			if(cmpResult == 0){
+				isTest = 1;
+				APP_TRACE_INFO(("\n\rin Test Mode\n\r"));
+				break;
+			}
+			cmpResult = strncmp(reset, node->words, 5);
+			if(cmpResult == 0){
+				isTest = 0;
+				isOff = 0;
+				APP_TRACE_INFO(("\n\rturn on Notification & turn off Test Mode\n\r"));
+				break;
+			}
 			node = node->next;
 		}
-		USART_SendData(USART2, '\n');
-		while ((USART2->SR & USART_SR_TC) == 0);
-		USART_SendData(USART2, '\r');
-		while ((USART2->SR & USART_SR_TC) == 0);
 		deleteNode();
 	}
 }
@@ -449,19 +481,38 @@ static void volcanoDetectHandlerTask(){
 	OS_ERR err;
 	while(DEF_TRUE){
 		OSFlagPend((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0x3,
+					(OS_FLAGS	) 0xF,
 					(OS_TICK	) 0,
 					(OS_OPT		) OS_OPT_PEND_FLAG_SET_ALL,
 					(CPU_TS	   *) NULL,
 					(OS_ERR	   *) &err);
 
-		USART_SendData(USART2, '!');
+		APP_TRACE_INFO(("\n\r\n\r----- Volcano Detected -----\n\r\n\r\n\r"));
 		// Todo : alert to user
 
 		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0x3,
+					(OS_FLAGS	) 0xF,
 					(OS_OPT		) OS_OPT_POST_FLAG_CLR,
 					(OS_ERR	   *) &err);
+	}
+}
+static void MessageTask(){
+	OS_MSG_SIZE msgSize;
+	void* msgPtr;
+	OS_ERR err;
+	while(DEF_TRUE){
+		msgPtr = OSTaskQPend((OS_TICK	 ) 0,
+							(OS_OPT		 ) OS_OPT_PEND_BLOCKING,
+							(OS_MSG_SIZE*) &msgSize,
+							(CPU_TS		*) NULL,
+							(OS_ERR		*) &err);
+
+		switch((int) msgPtr){
+			case 1: APP_TRACE_INFO(("-----    Sensor1 Fire Detected   -----\n\r")); break;
+			case 2: APP_TRACE_INFO(("----- Sensor2 Vibration Detected -----\n\r")); break;
+			case 3: APP_TRACE_INFO(("-----    Sensor3 Fire Detected   -----\n\r")); break;
+			case 4: APP_TRACE_INFO(("----- Sensor4 Vibration Detected -----\n\r")); break;
+		}
 	}
 }
 void ActionDetectISR(){
@@ -469,25 +520,68 @@ void ActionDetectISR(){
 
 	// button1
 	if(EXTI_GetITStatus(EXTI_Line4) != RESET){
-		// BSP_LED_Toggle(1);
+		BSP_LED_Toggle(1);
 		USART_SendData(USART2, '1');
-		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0x1,
-					(OS_OPT		) OS_OPT_POST_FLAG_SET,
-					(OS_ERR	   *) &err);
+		if(isTest) OSTaskQPost((OS_TCB		*) &messageTCB,
+								(void		*) 1,
+								(OS_MSG_SIZE ) 0,
+								(OS_OPT		) OS_OPT_POST_FIFO,
+								(OS_ERR		*) NULL);
+		else OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+						(OS_FLAGS	) 0x1,
+						(OS_OPT		) OS_OPT_POST_FLAG_SET,
+						(OS_ERR	   *) &err);
 
 		EXTI_ClearITPendingBit(EXTI_Line4);
 	}
 	// button2
 	if(EXTI_GetITStatus(EXTI_Line10) != RESET){
-		// BSP_LED_Toggle(2);
+		BSP_LED_Toggle(2);
 		USART_SendData(USART2, '2');
-		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0x2,
-					(OS_OPT		) OS_OPT_POST_FLAG_SET,
-					(OS_ERR	   *) &err);
+		if(isTest) OSTaskQPost((OS_TCB		*) &messageTCB,
+								(void		*) 2,
+								(OS_MSG_SIZE ) 0,
+								(OS_OPT		) OS_OPT_POST_FIFO,
+								(OS_ERR		*) NULL);
+		else OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+						(OS_FLAGS	) 0x2,
+						(OS_OPT		) OS_OPT_POST_FLAG_SET,
+						(OS_ERR	   *) &err);
 
 		EXTI_ClearITPendingBit(EXTI_Line10);
+	}
+	
+	// button3
+	if(EXTI_GetITStatus(EXTI_Line13) != RESET){
+		BSP_LED_Toggle(3);
+		USART_SendData(USART2, '3');
+		if(isTest) OSTaskQPost((OS_TCB		*) &messageTCB,
+								(void		*) 3,
+								(OS_MSG_SIZE ) 0,
+								(OS_OPT		) OS_OPT_POST_FIFO,
+								(OS_ERR		*) NULL);
+		else OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+						(OS_FLAGS	) 0x4,
+						(OS_OPT		) OS_OPT_POST_FLAG_SET,
+						(OS_ERR	   *) &err);
+
+		EXTI_ClearITPendingBit(EXTI_Line13);
+	}
+	// button4
+	if(EXTI_GetITStatus(EXTI_Line0) != RESET){
+		BSP_LED_Toggle(0);
+		USART_SendData(USART2, '4');
+		if(isTest) OSTaskQPost((OS_TCB		*) &messageTCB,
+								(void		*) 4,
+								(OS_MSG_SIZE ) 0,
+								(OS_OPT		) OS_OPT_POST_FIFO,
+								(OS_ERR		*) NULL);
+		else OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+						(OS_FLAGS	) 0x8,
+						(OS_OPT		) OS_OPT_POST_FLAG_SET,
+						(OS_ERR	   *) &err);
+
+		EXTI_ClearITPendingBit(EXTI_Line0);
 	}
 }
 void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler){
