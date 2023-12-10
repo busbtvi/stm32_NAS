@@ -769,6 +769,11 @@
               <FilePath>..\..\BSP\ST\STM32\inc\cortexm3_macro.h</FilePath>
             </File>
             <File>
+              <FileName>stm32f10x_nvic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\BSP\ST\STM32\inc\stm32f10x_nvic.h</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_adc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\BSP\ST\STM32\inc\stm32f10x_adc.h</FilePath>
@@ -889,6 +894,11 @@
               <FilePath>..\..\BSP\ST\STM32\inc\stm32f10x_wwdg.h</FilePath>
             </File>
             <File>
+              <FileName>stm32f10x_nvic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\BSP\ST\STM32\src\stm32f10x_nvic.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f10x_adc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\BSP\ST\STM32\src\stm32f10x_adc.c</FilePath>
@@ -997,6 +1007,11 @@
               <FileName>stm32f10x_wwdg.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\BSP\ST\STM32\src\stm32f10x_wwdg.c</FilePath>
+            </File>
+            <File>
+              <FileName>cortexm3_macro.S</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\..\BSP\ST\STM32\src\cortexm3_macro.S</FilePath>
             </File>
           </Files>
         </Group>

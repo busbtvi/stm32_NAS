@@ -37,6 +37,7 @@
 ".\output\os_dbg.o"
 ".\output\os_cpu_a.o"
 ".\output\os_cpu_c.o"
+".\output\stm32f10x_nvic.o"
 ".\output\stm32f10x_adc.o"
 ".\output\stm32f10x_bkp.o"
 ".\output\stm32f10x_can.o"
@@ -59,6 +60,7 @@
 ".\output\stm32f10x_tim.o"
 ".\output\stm32f10x_usart.o"
 ".\output\stm32f10x_wwdg.o"
+".\output\cortexm3_macro.o"
 --library_type=microlib --strict --scatter ".\Output\OS.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

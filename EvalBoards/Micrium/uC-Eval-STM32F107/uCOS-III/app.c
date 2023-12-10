@@ -48,16 +48,21 @@ volatile CPU_INT32U ADC_Value;
 
 /*
 *********************************************************************************************************
-*                                                 TCB
+*                                              OS Objects
 *********************************************************************************************************
 */
 
 static OS_MEM MemPool;
 static char memPoolStorage[MemPool_Size][1000];
+
 static OS_SEM memPoolSem;
 
 static OS_TCB AppTaskStartTCB;
 static OS_TCB AppTaskFirstTCB;
+static OS_TCB cliTCB;
+static OS_TCB volcanoDetectHandlerTCB;
+
+static OS_FLAG_GRP sensorsFLAG;
 
 /*
 *********************************************************************************************************
@@ -67,6 +72,8 @@ static OS_TCB AppTaskFirstTCB;
 
 static  CPU_STK  AppTaskStartStk[APP_TASK_START_STK_SIZE];
 static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
+static  CPU_STK  cliSTK[APP_TASK_FIRST_STK_SIZE];
+static  CPU_STK  volcanoDetectHandlerSTK[256];
 
 
 /*
@@ -78,10 +85,13 @@ static  CPU_STK  AppTaskFirstStk[APP_TASK_FIRST_STK_SIZE];
 static  void  AppTaskCreate (void);
 static  OS_ERR AppObjCreate  (void);
 static  void  AppTaskStart  (void *p_arg);
-static  void  AppTaskFirst  (void *p_arg);
-
 static void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler);
-void EXTI4_handler();
+static void ActionDetectISR();
+static void volcanoDetectHandlerTask();
+
+// TASK functions
+static void AppTaskFirst  (void *p_arg);
+static void cliTask();
 
 /*
 *********************************************************************************************************
@@ -102,7 +112,6 @@ int  main (void)
 
 
     BSP_IntDisAll();                                            /* Disable all interrupts.                              */
-
     OSInit(&err);                                               /* Init uC/OS-III.                                      */
 	
 	// OSSchedRoundRobinCfg((CPU_BOOLEAN)DEF_TRUE, 
@@ -149,7 +158,6 @@ static  void  AppTaskStart (void *p_arg)
     CPU_INT32U  cnts;
     OS_ERR      err;
 
-
    (void)p_arg;
 
     BSP_Init();                                                 /* Initialize BSP functions                             */
@@ -168,25 +176,34 @@ static  void  AppTaskStart (void *p_arg)
 		EXTI_Line4,
 		EXTI4_IRQChannel,
 		BSP_INT_ID_EXTI4,
-		(void*)EXTI4_handler
+		(CPU_FNCT_VOID) ActionDetectISR
+	);
+	SensorConfig(
+		RCC_APB2Periph_GPIOB,
+		GPIO_Pin_10,
+		GPIO_PortSourceGPIOB,
+		GPIO_PinSource10,
+		EXTI_Line10,
+		EXTI15_10_IRQChannel,
+		BSP_INT_ID_EXTI15_10,
+		(CPU_FNCT_VOID) ActionDetectISR
 	);
 
 	#if (APP_CFG_SERIAL_EN == DEF_ENABLED)
 		BSP_Ser_Init(115200);                                       /* Enable Serial Interface                              */
 	#endif
     
+    APP_TRACE_INFO(("Creating Application Object...\n\r"));
+    AppObjCreate();                                             /* Create Application Objects                           */
+
     APP_TRACE_INFO(("Creating Application Tasks...\n\r"));
     AppTaskCreate();                                            /* Create Application Tasks                             */
     
-    APP_TRACE_INFO(("Creating Application Object...\n\r"));
-    AppObjCreate();                                             /* Create Application Objects                           */
-    
-    BSP_LED_On(1); // "Set the bit" turns off the LED (STM32F107VC board)
+    // BSP_LED_On(1); // "Set the bit" turns off the LED (STM32F107VC board)
     while (DEF_TRUE) {                                          /* Task body, always written as an infinite loop.       */
         OSTimeDlyHMSM(0, 0, 1, 0,
                       OS_OPT_TIME_HMSM_STRICT,
                       &err);
-		BSP_LED_Toggle(1);
     }
 }
 
@@ -220,6 +237,34 @@ static  void  AppTaskCreate (void)
 				(void       *)0,
 				(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 				(OS_ERR     *)&err);
+	
+	// OSTaskCreate((OS_TCB     *) &cliTCB, 
+	// 			(CPU_CHAR   *) "cli",
+	// 			(OS_TASK_PTR ) cliTask,
+	// 			(void       *) 0,
+	// 			(OS_PRIO     ) 10,  // 적당히 낮게 설정한거(화산 감지보단 낮아야 하니)
+	// 			(CPU_STK    *) &cliSTK[0],
+	// 			(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE / 10,
+	// 			(CPU_STK_SIZE) APP_TASK_FIRST_STK_SIZE,
+	// 			(OS_MSG_QTY  )0,
+	// 			(OS_TICK     )0,
+	// 			(void       *)0,
+	// 			(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+	// 			(OS_ERR     *) &err);
+
+	OSTaskCreate((OS_TCB     *) &volcanoDetectHandlerTCB, 
+				(CPU_CHAR   *) "volcanoDetectHandler",
+				(OS_TASK_PTR ) volcanoDetectHandlerTask,
+				(void       *) 0,
+				(OS_PRIO     ) APP_TASK_FIRST_PRIO,
+				(CPU_STK    *) &volcanoDetectHandlerSTK[0],
+				(CPU_STK_SIZE) 256 / 10,
+				(CPU_STK_SIZE) 256,
+				(OS_MSG_QTY  )0,
+				(OS_TICK     )0,
+				(void       *)0,
+				(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+				(OS_ERR     *) &err);
 }
 
 
@@ -250,6 +295,13 @@ static OS_ERR AppObjCreate (){
 				(CPU_CHAR	*) "MemPoolSem",
 				(OS_SEM_CTR	 ) MemPool_Size,
 				(OS_ERR		*) &err);
+	if(err != OS_ERR_NONE) return err;
+
+	OSFlagCreate((OS_FLAG_GRP*) &sensorsFLAG,
+				(CPU_CHAR	 *) "SensorsFlag",
+				(OS_FLAGS	  ) 0,
+				(OS_ERR		 *) &err);
+
 	return err;
 }
 
@@ -262,36 +314,72 @@ static OS_ERR AppObjCreate (){
 
 static void AppTaskFirst (void *p_arg) {
 	OS_ERR err;
-	u16 temp;
 	while (DEF_TRUE) {
-		BSP_LED_Toggle(2);
-		OSTimeDlyHMSM(0, 0, 3, 0,
-					OS_OPT_TIME_HMSM_STRICT,
-					&err);
-
-		// USART_SendData(USART2, ADC_Value);
+		OSTimeDlyHMSM(0, 0, 1, 0, OS_OPT_TIME_HMSM_STRICT, &err);
+		BSP_LED_Toggle(1);
 		//      4294967295
-		int i = 1000000000, j = 0;
-		for(j=0; j<9; j++){
-			USART_SendData(USART2, (u16)(ADC_Value/i + '0'));
-			while ((USART2->SR & USART_SR_TC) == 0);
-			i = i/10;
-		}
-		// USART_SendData(USART2, (u16)(ADC_Value & 0xffff));
-		// USART_SendData(USART2, '*');
-		USART_SendData(USART2, '\n');
-		while ((USART2->SR & USART_SR_TC) == 0);
-		USART_SendData(USART2, '\r');
-		while ((USART2->SR & USART_SR_TC) == 0);
+		// int i = 1000000000, j = 0;
+		// for(j=0; j<9; j++){
+		// 	USART_SendData(USART2, (u16)(ADC_Value/i + '0'));
+		// 	while ((USART2->SR & USART_SR_TC) == 0);
+		// 	i = i/10;
+		// }
+		// USART_SendData(USART2, '\n');
+		// while ((USART2->SR & USART_SR_TC) == 0);
 		// USART_SendData(USART2, '\r');
+		// while ((USART2->SR & USART_SR_TC) == 0);
 	}
 }
-void EXTI4_handler(){
+static void cliTask(){
+	OS_ERR err;
+	while(DEF_TRUE){
+		OSTimeDlyHMSM(0, 0, 20, 0, OS_OPT_TIME_HMSM_STRICT, &err);
+		// todo : cli 내용 여기에
+	}
+}
+static void volcanoDetectHandlerTask(){
+	OS_ERR err;
+	while(DEF_TRUE){
+		OSFlagPend((OS_FLAG_GRP*) &sensorsFLAG,
+					(OS_FLAGS	) 0x3,
+					(OS_TICK	) 0,
+					(OS_OPT		) OS_OPT_PEND_FLAG_SET_ALL,
+					(CPU_TS	   *) NULL,
+					(OS_ERR	   *) &err);
+
+		USART_SendData(USART2, '!');
+		// Todo : alert to user
+
+		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+					(OS_FLAGS	) 0x3,
+					(OS_OPT		) OS_OPT_POST_FLAG_CLR,
+					(OS_ERR	   *) &err);
+	}
+}
+void ActionDetectISR(){
+	OS_ERR err;
+
+	// button1
 	if(EXTI_GetITStatus(EXTI_Line4) != RESET){
-		BSP_LED_Toggle(3);
-		USART_SendData(USART2, '*');
-		
+		// BSP_LED_Toggle(1);
+		USART_SendData(USART2, '1');
+		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+					(OS_FLAGS	) 0x1,
+					(OS_OPT		) OS_OPT_POST_FLAG_SET,
+					(OS_ERR	   *) &err);
+
 		EXTI_ClearITPendingBit(EXTI_Line4);
+	}
+	// button2
+	if(EXTI_GetITStatus(EXTI_Line10) != RESET){
+		// BSP_LED_Toggle(2);
+		USART_SendData(USART2, '2');
+		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
+					(OS_FLAGS	) 0x2,
+					(OS_OPT		) OS_OPT_POST_FLAG_SET,
+					(OS_ERR	   *) &err);
+
+		EXTI_ClearITPendingBit(EXTI_Line10);
 	}
 }
 void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler){
@@ -300,29 +388,30 @@ void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph, ENABLE);
 
 	// GPIO
-	GPIO_InitTypeDef button1_gpio = {
+	GPIO_InitTypeDef gpio = {
 		.GPIO_Pin = GPIO_Pin,
 		.GPIO_Mode = GPIO_Mode_IPU,
 	};
-	GPIO_Init(GPIOC, &button1_gpio);
+	GPIO_Init(GPIOC, &gpio);
 
 	// EXTI
 	GPIO_EXTILineConfig(GPIO_PortSource, GPIO_PinSource);
-	EXTI_InitTypeDef button1_exti = {
+	EXTI_InitTypeDef exti = {
 		.EXTI_Line = EXTI_Line,
 		.EXTI_Mode = EXTI_Mode_Interrupt,
 		.EXTI_Trigger = EXTI_Trigger_Rising_Falling,
 		.EXTI_LineCmd = ENABLE
 	};
-	EXTI_Init(&button1_exti);
+	EXTI_Init(&exti);
 
 	// NVIC
-	NVIC_InitTypeDef button1_nvic = {
+	NVIC_InitTypeDef nvic = {
 		.NVIC_IRQChannel = NVIC_IRQChannel,
 		.NVIC_IRQChannelPreemptionPriority = 0x00,
 		.NVIC_IRQChannelSubPriority = 0x00,
 		.NVIC_IRQChannelCmd = ENABLE
 	};
+	NVIC_Init(&nvic);
 
 	// Interrupt Handler
 	BSP_IntVectSet(int_id, handler);
