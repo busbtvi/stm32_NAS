@@ -578,6 +578,7 @@ static void cliTask(){
 						else GPIO_Flip(GPIO_PortSourceGPIOA, GPIO_PinSource0, EXTI_Line0, EXTI0_IRQChannel, ENABLE);
 						break;
 				}
+				APP_TRACE_INFO(("\n\rSensor Interrupt State has Changed\n\r"));
 				// 1111 -> 1101  ==  1111(curGoal) ^ 0010(flipBit)
 				curGoal = curGoal ^ (1 << (node->words[5] - '1'));
 				
@@ -621,7 +622,7 @@ static void volcanoDetectHandlerTask(OS_FLAGS goal){
 					(CPU_TS	   *) NULL,
 					(OS_ERR	   *) &err);
 
-		APP_TRACE_INFO(("\n\r\n\r----- Volcano Detected -----\n\r\n\r\n\r"));
+		APP_TRACE_INFO(("\n\r\n\r----- Volcano Detected -----\n\r\n\r"));
 		// Todo : alert to user
 
 		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
@@ -642,10 +643,10 @@ static void MessageTask(){
 							(OS_ERR		*) &err);
 
 		switch((int) msgPtr){
-			case 1: APP_TRACE_INFO(("-----    Sensor1 Fire Detected   -----\n\r")); break;
-			case 2: APP_TRACE_INFO(("----- Sensor2 Vibration Detected -----\n\r")); break;
-			case 3: APP_TRACE_INFO(("-----    Sensor3 Fire Detected   -----\n\r")); break;
-			case 4: APP_TRACE_INFO(("----- Sensor4 Vibration Detected -----\n\r")); break;
+			case 1: APP_TRACE_INFO(("\n\r-----    Sensor1 Fire Detected   -----\n\r")); break;
+			case 2: APP_TRACE_INFO(("\n\r----- Sensor2 Vibration Detected -----\n\r")); break;
+			case 3: APP_TRACE_INFO(("\n\r-----    Sensor3 Fire Detected   -----\n\r")); break;
+			case 4: APP_TRACE_INFO(("\n\r----- Sensor4 Vibration Detected -----\n\r")); break;
 		}
 	}
 }
@@ -653,6 +654,7 @@ static void flagClearTask(){
 	OS_ERR err;
 	while(DEF_TRUE){
 		OSTimeDlyHMSM(0, 0, 20, 0, OS_OPT_TIME_HMSM_STRICT, &err);
+		APP_TRACE_INFO(("Clear Flag\n\r"));
 		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
 					(OS_FLAGS	) 0xF,
 					(OS_OPT		) OS_OPT_POST_FLAG_CLR,
