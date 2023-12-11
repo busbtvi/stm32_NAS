@@ -48,6 +48,7 @@
 volatile CPU_INT32U ADC_Value;
 
 int isTest = 0, isOff = 0;
+OS_FLAGS curGoal = 0xF;
 
 typedef struct _linkedList {
 	struct _linkedList *next;
@@ -99,6 +100,7 @@ static  OS_ERR AppObjCreate  (void);
 // Config functions
 static void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler);
 static void UsartConfig();
+static void GPIO_Flip(u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, FunctionalState newState);
 
 // Handler functions
 static void ActionDetectISR();
@@ -290,7 +292,7 @@ static  void  AppTaskCreate (void)
 	OSTaskCreate((OS_TCB     *) &volcanoDetectHandlerTCB, 
 				(CPU_CHAR   *) "volcanoDetectHandler",
 				(OS_TASK_PTR ) volcanoDetectHandlerTask,
-				(void       *) 0,
+				(void       *) curGoal,
 				(OS_PRIO     ) APP_TASK_FIRST_PRIO,
 				(CPU_STK    *) &volcanoDetectHandlerSTK[0],
 				(CPU_STK_SIZE) 256 / 10,
@@ -528,7 +530,7 @@ static void cliTask(){
 	linkedList *node;
 
 	int cmpResult;
-	char* test = "test", *reset = "reset"; //, *read = "read";
+	char* test = "test", *reset = "reset", *flip = "flip"; //, *read = "read";
 
 	while(DEF_TRUE){
 		APP_TRACE_INFO(("Enter Command : "));
@@ -555,12 +557,48 @@ static void cliTask(){
 				APP_TRACE_INFO(("\n\rin Test Mode\n\r"));
 				break;
 			}
-			// cmpResult = strncmp(read, node->words, 4);
-			// if(cmpResult == 0){
-			// 	USART_SendData(USART2, (ADC_Value & 0xFF));
-			// 	while ((USART2->SR & USART_SR_TC) == 0);
-			// 	break;
-			// }
+			cmpResult = strncmp(flip, node->words, 4);
+			if(cmpResult == 0){
+				// flip sensor interrupt by exti, nvic Enable/Disable
+				switch(node->words[5] - '0'){
+					case 1:
+						if(curGoal & 0x1) GPIO_Flip(GPIO_PortSourceGPIOC, GPIO_PinSource4, EXTI_Line4, EXTI4_IRQChannel, DISABLE);
+						else GPIO_Flip(GPIO_PortSourceGPIOC, GPIO_PinSource4, EXTI_Line4, EXTI4_IRQChannel, ENABLE);
+						break;
+					case 2:
+						if(curGoal & 0x2) GPIO_Flip(GPIO_PortSourceGPIOB, GPIO_PinSource10, EXTI_Line10, EXTI15_10_IRQChannel, DISABLE);
+						else GPIO_Flip(GPIO_PortSourceGPIOB, GPIO_PinSource10, EXTI_Line10, EXTI15_10_IRQChannel, ENABLE);
+						break;
+					case 3:
+						if(curGoal & 0x4) GPIO_Flip(GPIO_PortSourceGPIOC, GPIO_PinSource13, EXTI_Line13, EXTI15_10_IRQChannel, DISABLE);
+						else GPIO_Flip(GPIO_PortSourceGPIOC, GPIO_PinSource13, EXTI_Line13, EXTI15_10_IRQChannel, ENABLE);
+						break;
+					case 4:	
+						if(curGoal & 0x8) GPIO_Flip(GPIO_PortSourceGPIOA, GPIO_PinSource0, EXTI_Line0, EXTI0_IRQChannel, DISABLE);
+						else GPIO_Flip(GPIO_PortSourceGPIOA, GPIO_PinSource0, EXTI_Line0, EXTI0_IRQChannel, ENABLE);
+						break;
+				}
+				// 1111 -> 1101  ==  1111(curGoal) ^ 0010(flipBit)
+				curGoal = curGoal ^ (1 << (node->words[5] - '1'));
+				
+				OSTaskDel((OS_TCB	*) &volcanoDetectHandlerTCB,
+							(OS_ERR	*) &err);
+				OSTaskCreate((OS_TCB     *) &volcanoDetectHandlerTCB, 
+							(CPU_CHAR   *) "volcanoDetectHandler",
+							(OS_TASK_PTR ) volcanoDetectHandlerTask,
+							(void       *) curGoal,
+							(OS_PRIO     ) APP_TASK_FIRST_PRIO,
+							(CPU_STK    *) &volcanoDetectHandlerSTK[0],
+							(CPU_STK_SIZE) 256 / 10,
+							(CPU_STK_SIZE) 256,
+							(OS_MSG_QTY  ) 0,
+							(OS_TICK     ) 0,
+							(void       *) 0,
+							(OS_OPT      ) (OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+							(OS_ERR     *) &err);
+				APP_TRACE_INFO(("\n\rVolcano Detect Handler Task is changed\n\r"));
+				break;
+			}
 			cmpResult = strncmp(reset, node->words, 5);
 			if(cmpResult == 0){
 				isTest = 0;
@@ -573,11 +611,11 @@ static void cliTask(){
 		deleteNode();
 	}
 }
-static void volcanoDetectHandlerTask(){
+static void volcanoDetectHandlerTask(OS_FLAGS goal){
 	OS_ERR err;
 	while(DEF_TRUE){
 		OSFlagPend((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0xF,
+					(OS_FLAGS	) goal,
 					(OS_TICK	) 0,
 					(OS_OPT		) OS_OPT_PEND_FLAG_SET_ALL,
 					(CPU_TS	   *) NULL,
@@ -587,7 +625,7 @@ static void volcanoDetectHandlerTask(){
 		// Todo : alert to user
 
 		OSFlagPost((OS_FLAG_GRP*) &sensorsFLAG,
-					(OS_FLAGS	) 0xF,
+					(OS_FLAGS	) goal,
 					(OS_OPT		) OS_OPT_POST_FLAG_CLR,
 					(OS_ERR	   *) &err);
 	}
@@ -627,6 +665,25 @@ static void flagClearTask(){
 *                                      Config Functions
 *********************************************************************************************************
 */
+static void GPIO_Flip(u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, FunctionalState newState){
+	GPIO_EXTILineConfig(GPIO_PortSource, GPIO_PinSource);
+	EXTI_InitTypeDef exti = {
+		.EXTI_Line = EXTI_Line,
+		.EXTI_Mode = EXTI_Mode_Interrupt,
+		.EXTI_Trigger = EXTI_Trigger_Rising_Falling,
+		.EXTI_LineCmd = newState
+	};
+	EXTI_Init(&exti);
+
+	// NVIC
+	NVIC_InitTypeDef nvic = {
+		.NVIC_IRQChannel = NVIC_IRQChannel,
+		.NVIC_IRQChannelPreemptionPriority = 0x00,
+		.NVIC_IRQChannelSubPriority = 0x00,
+		.NVIC_IRQChannelCmd = newState
+	};
+	NVIC_Init(&nvic);
+}
 void SensorConfig(u32 RCC_APB2Periph, u16 GPIO_Pin, u8 GPIO_PortSource, u8 GPIO_PinSource, u32 EXTI_Line, u8 NVIC_IRQChannel, CPU_DATA int_id, CPU_FNCT_VOID handler){
 	// RCC
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
