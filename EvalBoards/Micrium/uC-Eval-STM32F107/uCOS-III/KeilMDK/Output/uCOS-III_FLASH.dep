@@ -1,6 +1,6 @@
 Dependencies for Project 'uCOS-III', Target 'FLASH': (DO NOT MODIFY !)
 CompilerVersion: 6190000::V6.19::ARMCLANG
-F (..\app.c)(0x65763CB3)(-xc -std=c90 --target=arm-arm-none-eabi -mcpu=cortex-m3 -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__MICROLIB -gdwarf-4 -O1 -fno-function-sections -I ../../uCOS-III -I ../../BSP -I ../../BSP/OS/uCOS-III -I ../../BSP/ST/STM32/inc -I ../../BSP/KeilMDK -I ../../../../../uC-CPU -I ../../../../../uC-CPU/ARM-Cortex-M3/RealView -I ../../../../../uC-LIB -I ../../../../../uC-LIB/Ports/ARM-Cortex-M3/RealView -I ../../../../../uCOS-III/Source -I ../../../../../uCOS-III/Ports/ARM-Cortex-M3/Generic/RealView-I"D:/Program Files/Keil_v5/ARM/RV31/INC"-I"D:/Program Files/Keil_v5/ARM/CMSIS/Include"-I"D:/Program Files/Keil_v5/ARM/INC/ST/STM32F10x"-D__UVISION_VERSION="538" -DUSE_STDPERIPH_DRIVER-o ./output/app.o -MD)
+F (..\app.c)(0x657652AB)(-xc -std=c90 --target=arm-arm-none-eabi -mcpu=cortex-m3 -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-D__MICROLIB -gdwarf-4 -O1 -fno-function-sections -I ../../uCOS-III -I ../../BSP -I ../../BSP/OS/uCOS-III -I ../../BSP/ST/STM32/inc -I ../../BSP/KeilMDK -I ../../../../../uC-CPU -I ../../../../../uC-CPU/ARM-Cortex-M3/RealView -I ../../../../../uC-LIB -I ../../../../../uC-LIB/Ports/ARM-Cortex-M3/RealView -I ../../../../../uCOS-III/Source -I ../../../../../uCOS-III/Ports/ARM-Cortex-M3/Generic/RealView-I"D:/Program Files/Keil_v5/ARM/RV31/INC"-I"D:/Program Files/Keil_v5/ARM/CMSIS/Include"-I"D:/Program Files/Keil_v5/ARM/INC/ST/STM32F10x"-D__UVISION_VERSION="538" -DUSE_STDPERIPH_DRIVER-o ./output/app.o -MD)
 I (..\..\uCOS-III\includes.h)(0x65741422)
 I (D:\Program Files\Keil_v5\ARM\ARMCLANG\include\stdarg.h)(0x63883AF8)
 I (D:\Program Files\Keil_v5\ARM\ARMCLANG\include\stdio.h)(0x63883AF8)
@@ -54,6 +54,7 @@ I (..\..\..\..\..\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView\os_cpu.h)(0x4FFE
 I (..\..\BSP\bsp_ser.h)(0x6575F3A7)
 I (..\..\BSP\bsp_i2c.h)(0x5032E5AA)
 I (..\..\BSP\bsp_stlm75.h)(0x5032E5AA)
+I (D:\Program Files\Keil_v5\ARM\ARMCLANG\include\string.h)(0x63883AF8)
 F (..\app_cfg.h)(0x6575CBBE)()
 F (..\cpu_cfg.h)(0x5032E5A0)()
 F (..\includes.h)(0x65741422)()
